@@ -8,3 +8,4 @@ pydantic
 requests_oauthlib
 langchain
 tweepy
+lamgchain-openai
