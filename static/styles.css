@@ -1,0 +1,56 @@
+/* Existing styles.css content... */
+
+/* Additional styles for the custom dashboard layout */
+.dashboard-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: start;
+  padding: 20px;
+  gap: 20px;
+}
+
+.left-panel,
+.right-panel {
+  flex: 1;
+  background-color: #eef2f5;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.center-panel {
+  flex: 2;
+  padding: 20px;
+}
+
+#lenox-container {
+  text-align: center;
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+}
+
+.chart {
+  height: 300px;
+  /* Adjust height as needed */
+  /* Placeholder styles for charts */
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  text-align: center;
+  line-height: 300px;
+  /* Center text vertically */
+}
+
+/* Responsive design adjustments */
+@media (max-width: 768px) {
+  .dashboard-container {
+    flex-direction: column;
+  }
+
+  .left-panel,
+  .right-panel,
+  .center-panel {
+    width: 100%;
+  }
+}
