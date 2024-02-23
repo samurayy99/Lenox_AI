@@ -1,4 +1,4 @@
 venv-lenox
 __pycache__
 .cursorignore
-env
+.env
