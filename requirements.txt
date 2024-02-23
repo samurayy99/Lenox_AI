@@ -1,0 +1,10 @@
+flask
+panel
+bokeh
+python-dotenv
+requests
+openai
+pydantic 
+requests_oauthlib
+langchain
+tweepy
