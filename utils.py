@@ -26,18 +26,8 @@ class cbfs:
         ) | self.prompt | self.model | OpenAIFunctionsAgentOutputParser()
         self.qa = AgentExecutor(agent=self.chain, tools=tools, verbose=False, memory=self.memory)
 
-    def convchain(self, query):
-        if not query:
-            return ""
-        result = self.qa.invoke({"input": query})
-        answer = result['output']
-        self.panels.extend([
-            pn.Row('User:', pn.pane.Markdown(query, width=450)),
-            pn.Row('ChatBot:', pn.pane.Markdown(answer, width=450, styles={'background-color': '#F6F6F6'}))
-        ])
-        return pn.Column(*self.panels, scroll=True)
 
-    def clr_history(self, count=0):
+        def clr_history(self, count=0):
         # Löscht den Chat-Verlauf und die Panels
         self.memory.update({"chat_history": []})  # Chat-Verlauf im Speicher löschen
         self.panels = []  # UI-Elemente löschen
