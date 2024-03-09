@@ -1,61 +1,91 @@
-from flask import Flask, render_template, request
-import panel as pn
-from bokeh.embed import server_document
-from dotenv import load_dotenv
+from flask import Flask, render_template, request, jsonify
 import os
-import openai  # Fügen Sie diesen Import hinzu
+from flask_cors import CORS
+from dotenv import load_dotenv
+import logging
+from logging.handlers import RotatingFileHandler
+import json
+import plotly
+import plotly.graph_objs as go
+from utils import Lenox
 
-# Importieren Sie cbfs aus utils.py, wenn es dort definiert ist
-from utils import cbfs
-
-# Stellen Sie sicher, dass alle benötigten Funktionen korrekt aus tool.py importiert werden
-from tool import (
-    get_crypto_data,
-    get_reddit_data, 
-    get_coingecko_market_data,
-    get_historical_crypto_price,
-    get_lunarcrush_galaxy_score,
-    get_lunarcrush_alt_rank,
-    # Fügen Sie hier die korrekte Import-Anweisung für get_bitquery_data hinzu, falls benötigt
-)
-
-load_dotenv()
-openai.api_key = os.getenv('OPENAI_API_KEY')  # Stellen Sie sicher, dass diese Zeile nach dem Import von openai steht
+# Import the tools you use in your project
+from messari_tools import get_asset_data, get_news_feed, get_research_reports
+from lunarcrush_tools import get_lunarcrush_galaxy_score, analyze_crypto_sentiment, get_influential_crypto_assets
+from reddit_tools import get_reddit_data, count_mentions, analyze_sentiment, find_trending_topics
+from coingecko_tools import get_coingecko_market_data, get_liquidity_score, get_macd
+from cryptocompare_tools import get_crypto_data, get_historical_crypto_price
 
 app = Flask(__name__)
+CORS(app)
+load_dotenv()
 
-# Initialisiere das conversational bot framework mit den Tools
-# Stellen Sie sicher, dass die Variable `tools` korrekt definiert und initialisiert wird, bevor Sie sie verwenden
-tools = [get_crypto_data, get_reddit_data, get_coingecko_market_data, get_historical_crypto_price, get_lunarcrush_galaxy_score, get_lunarcrush_alt_rank]
-cb = cbfs(tools)
+# Database initialization with Flask-Migrate
 
-# Erstelle UI-Komponenten für die Webanwendung
-# Da Sie die Funktionen zum Löschen des Chatverlaufs entfernen möchten, lassen wir diese Teile weg
-inp = pn.widgets.TextInput(placeholder='Enter your query about the crypto market here…')
+# Initialize Lenox with a broader range of tools
+lenox = Lenox([
+    get_crypto_data, get_reddit_data, get_coingecko_market_data,
+    get_liquidity_score, get_macd, get_historical_crypto_price,
+    get_lunarcrush_galaxy_score, analyze_sentiment, find_trending_topics,
+    get_influential_crypto_assets, analyze_crypto_sentiment,
+    get_asset_data, get_news_feed, get_research_reports
+])
 
-# Binde die Konversation an das Eingabefeld
-conversation = pn.bind(cb.convchain, inp) 
+# Configure structured logging
+handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=1)
+handler.setLevel(logging.DEBUG)
+app.logger.addHandler(handler)
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-# Erstelle das Dashboard-Layout
-tab1 = pn.Column(
-    pn.Row(inp, sizing_mode='stretch_width'),  # Zentrieren des Eingabefelds
-    pn.layout.Divider(),
-    pn.panel(conversation, loading_indicator=True, height=400),
-)
+app.logger.info('Flask application has started')
 
-dashboard = pn.Column(
-    pn.Row(pn.pane.Markdown('# Lenox: Your Crypto Assistant'), sizing_mode='stretch_width'),
-    pn.Tabs(('Conversation', tab1))
-)
+@app.before_request
+def before_request_logging():
+    app.logger.debug(f'Incoming request: {request.method} {request.path}')
 
-# Starte den Panel-Server
-panel_server = pn.serve(dashboard, show=False, port=5000)
+@app.after_request
+def after_request_logging(response):
+    app.logger.debug(f'Outgoing response: {response.status}')
+    return response
 
 @app.route('/')
 def index():
-    # Integriere Bokeh für interaktive Visualisierungen
-    bokeh_script = server_document(url=f'http://localhost:{panel_server.port}', relative_urls=True)
-    return render_template('index.html', bokeh_script=bokeh_script)
+    return render_template('index.html')
+
+@app.route('/query', methods=['POST'])
+def handle_query():
+    data = request.get_json()
+    query = data.get('query', '')
+    session_id = data.get('session_id', 'default_session')  # You might want to handle session ID more dynamically
+    if not query:
+        return jsonify({'error': 'Empty query.'}), 400
+    response = lenox.convchain(query, session_id)
+    return jsonify(response)
+
+
+@app.route('/create_visualization', methods=['POST'])
+def create_visualization():
+    data = request.get_json()
+    x_data = data['x']
+    y_data = data['y']
+    graphJSON = lenox.create_visualization(x_data, y_data)
+    return jsonify(graphJSON)
+
+@app.errorhandler(500)
+def handle_error(error):
+    app.logger.error(f'Internal Server Error: {error}')
+    return jsonify({'error': 'An internal server error has occurred.'}), 500
+
+@app.errorhandler(404)
+def handle_404_error(error):
+    app.logger.error(f'404 Not Found: {error}')
+    return jsonify({'error': 'Resource not found.'}), 404
+
+@app.route('/data', methods=['GET'])
+def get_data():
+    data = lenox.get_sample_data()
+    return jsonify(data)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=os.getenv('FLASK_DEBUG', 'False') == 'True')
