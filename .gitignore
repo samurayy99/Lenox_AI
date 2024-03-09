@@ -1,4 +1,8 @@
-venv-lenox
 __pycache__
 .cursorignore
+venv-lenox
 .env
+lenox.db
+app.log
+app.log1
+requirements.txt
