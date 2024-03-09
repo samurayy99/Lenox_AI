@@ -1,56 +1,156 @@
-/* Existing styles.css content... */
+/* Global Styles */
+body,
+html {
+  height: 100%;
+  margin: 0;
+  font-family: 'Courier New', monospace;
+  background-color: #e0e5ec;
+  color: #000;
+  overflow-x: hidden;
+}
 
-/* Additional styles for the custom dashboard layout */
-.dashboard-container {
+/* Chat Container */
+.chat-container {
+  background-color: #f0f5fc;
+  border: 1px solid #b0c4de;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
   display: flex;
-  justify-content: space-around;
-  align-items: start;
-  padding: 20px;
+  flex-direction: column;
+  height: 95vh;
+  width: 95vw;
+  margin: 2.5vh auto;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Chat Messages */
+.chat-messages {
+  display: flex;
+  flex-direction: column;
   gap: 20px;
-}
-
-.left-panel,
-.right-panel {
-  flex: 1;
-  background-color: #eef2f5;
   padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+  background-color: #f0f5fc;
+  flex-grow: 1;
 }
 
-.center-panel {
-  flex: 2;
+/* Chat Input Container */
+.chat-input-container {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  background-color: #add8e6;
+  border-top: 2px solid #b0c4de;
+}
+
+/* Other styles remain unchanged */
+/* ... (rest of the styles) ... */
+
+/* Chat Header */
+.chat-header {
+  background-color: #add8e6;
+  color: #000;
   padding: 20px;
-}
-
-#lenox-container {
+  /* Einheitliche Padding-Einstellung */
   text-align: center;
-  background-color: #ffffff;
-  padding: 20px;
+  font-size: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Korrigierter Selektor für h2 im Header */
+.chat-header h2 {
+  font-family: 'Orbitron', sans-serif;
+  /* Aktualisierte Schriftart */
+  margin: 0;
+  font-size: 24px;
+  /* Größe angepasst */
+  font-weight: 700;
+  /* Fett */
+}
+
+/* Bereich für Visualisierungen */
+.visualization-container {
+  flex-grow: 1;
+  /* Erlaubt dem Container, den verfügbaren Platz zu nutzen */
+  width: 100%;
+  /* Setzt die Breite auf die volle verfügbare Breite */
+  min-height: 300px;
+  /* Setzt eine minimale Höhe für die Visualisierung */
+  margin-top: 20px;
+  /* Fügt einen Abstand nach oben hinzu */
+}
+
+.visualization-placeholder {
+  flex-grow: 1;
+  width: 100%;
+  min-height: 300px;
+  /* Adjust this value as needed */
+  margin-top: 20px;
+  display: none;
+  /* Initially hidden */
+}
+
+/* Nachrichten Styles */
+.user-message,
+.bot-message {
+  display: block;
+  /* Change from inline-block to block */
+  padding: 10px 20px;
+  /* Adjust padding as needed */
   border-radius: 8px;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+  max-width: 100%;
+  word-wrap: break-word;
+  font-size: 16px;
+  margin-bottom: 5px;
+  box-sizing: border-box;
+  /* Ensures padding is included in the width */
 }
 
-.chart {
-  height: 300px;
-  /* Adjust height as needed */
-  /* Placeholder styles for charts */
-  background-color: #ffffff;
-  border: 1px solid #ddd;
-  text-align: center;
-  line-height: 300px;
-  /* Center text vertically */
+.user-message {
+  background-color: #b0c4de;
+  /* Dezenter Blauton */
+  color: #000;
+  /* Schwarze Schrift */
+  border: 1px solid #9fb6cd;
+  /* Grenze für Bubble-Effekt */
 }
 
-/* Responsive design adjustments */
-@media (max-width: 768px) {
-  .dashboard-container {
-    flex-direction: column;
-  }
+.bot-message {
+  background-color: #fff;
+  /* Light background for contrast */
+  color: #000;
+  /* Text color */
+  border: 2px solid #add8e6;
+  /* Border in the same header blue */
+}
 
-  .left-panel,
-  .right-panel,
-  .center-panel {
-    width: 100%;
-  }
+
+.chat-input {
+  flex-grow: 1;
+  border: 2px solid #b0c4de;
+  background-color: #fff;
+  border-radius: 15px;
+  padding: 10px 20px;
+  margin-right: 10px;
+}
+
+button,
+.chat-input-button {
+  background-color: #add8e6;
+  /* Akzentfarbe */
+  color: #000;
+  /* Schwarze Schrift */
+  border: none;
+  padding: 10px 20px;
+  border-radius: 15px;
+  cursor: pointer;
+}
+
+button:hover,
+.chat-input-button:hover {
+  background-color: #9fb6cd;
+  /* Dunkler beim Hover */
 }

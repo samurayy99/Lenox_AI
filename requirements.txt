@@ -9,3 +9,9 @@ requests_oauthlib
 langchain
 tweepy
 lamgchain-openai
+textblob
+praw
+DuckDuckGo-Search
+langchain-community  
+youtube_transcript_api
+pytube

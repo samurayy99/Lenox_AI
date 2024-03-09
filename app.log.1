@@ -1,0 +1,175 @@
+Flask application has started
+Incoming request: GET /
+Outgoing response: 200 OK
+Incoming request: GET /static/styles.css
+Incoming request: GET /static/images/logo.png
+Incoming request: GET /static/script.js
+Outgoing response: 304 NOT MODIFIED
+Outgoing response: 304 NOT MODIFIED
+Outgoing response: 304 NOT MODIFIED
+Incoming request: GET /static/images/favicon.ico
+Outgoing response: 304 NOT MODIFIED
+Incoming request: POST /query
+Exception on /query [POST]
+Traceback (most recent call last):
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 1463, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 872, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask_cors/extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 870, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 855, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/main.py", line 63, in handle_query
+    response = lenox.convchain(query, session_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 59, in convchain
+    dynamic_prompt = self.generate_dynamic_prompt(query)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Lenox' object has no attribute 'generate_dynamic_prompt'
+Internal Server Error: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.
+Outgoing response: 500 INTERNAL SERVER ERROR
+Flask application has started
+Incoming request: GET /
+Outgoing response: 200 OK
+Incoming request: GET /static/styles.css
+Incoming request: GET /static/script.js
+Incoming request: GET /static/images/logo.png
+Outgoing response: 304 NOT MODIFIED
+Outgoing response: 304 NOT MODIFIED
+Outgoing response: 304 NOT MODIFIED
+Incoming request: GET /static/images/favicon.ico
+Outgoing response: 304 NOT MODIFIED
+Incoming request: POST /query
+Exception on /query [POST]
+Traceback (most recent call last):
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 1463, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 872, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask_cors/extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 870, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 855, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/main.py", line 63, in handle_query
+    response = lenox.convchain(query, session_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 59, in convchain
+    result = self.qa.invoke(
+             ^^^^^^^
+AttributeError: 'Lenox' object has no attribute 'qa'
+Internal Server Error: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.
+Outgoing response: 500 INTERNAL SERVER ERROR
+Flask application has started
+Flask application has started
+Flask application has started
+Incoming request: GET /
+Outgoing response: 200 OK
+Incoming request: GET /static/styles.css
+Incoming request: GET /static/script.js
+Outgoing response: 304 NOT MODIFIED
+Incoming request: GET /static/images/logo.png
+Outgoing response: 304 NOT MODIFIED
+Outgoing response: 304 NOT MODIFIED
+Incoming request: GET /static/images/favicon.ico
+Outgoing response: 304 NOT MODIFIED
+Incoming request: POST /query
+Outgoing response: 200 OK
+Incoming request: POST /query
+Outgoing response: 200 OK
+Incoming request: POST /query
+Outgoing response: 200 OK
+Flask application has started
+Incoming request: GET /
+Outgoing response: 200 OK
+Incoming request: GET /static/styles.css
+Outgoing response: 304 NOT MODIFIED
+Incoming request: GET /static/images/logo.png
+Outgoing response: 304 NOT MODIFIED
+Incoming request: GET /static/script.js
+Outgoing response: 304 NOT MODIFIED
+Incoming request: GET /static/images/favicon.ico
+Outgoing response: 304 NOT MODIFIED
+Incoming request: POST /query
+Exception on /query [POST]
+Traceback (most recent call last):
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 1463, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 872, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask_cors/extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 870, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 855, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/main.py", line 63, in handle_query
+    response = lenox.convchain(query, session_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 55, in convchain
+    if self.is_visualization_query(query):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Lenox' object has no attribute 'is_visualization_query'
+Internal Server Error: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.
+Outgoing response: 500 INTERNAL SERVER ERROR
+Flask application has started
+Incoming request: GET /
+Outgoing response: 200 OK
+Incoming request: GET /static/styles.css
+Incoming request: GET /static/images/logo.png
+Outgoing response: 304 NOT MODIFIED
+Outgoing response: 304 NOT MODIFIED
+Incoming request: GET /static/script.js
+Outgoing response: 304 NOT MODIFIED
+Incoming request: GET /static/images/favicon.ico
+Outgoing response: 304 NOT MODIFIED
+Incoming request: POST /query
+Exception on /query [POST]
+Traceback (most recent call last):
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 1463, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 872, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask_cors/extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 870, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 855, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/main.py", line 63, in handle_query
+    response = lenox.convchain(query, session_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 55, in convchain
+    if self.is_visualization_query(query):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 100, in is_visualization_query
+    return any(re.search(pattern, query, re.IGNORECASE) for pattern in visualization_patterns)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 100, in <genexpr>
+    return any(re.search(pattern, query, re.IGNORECASE) for pattern in visualization_patterns)
+               ^^
+NameError: name 're' is not defined

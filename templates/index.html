@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Lenox Chat</title>
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+
+<body>
+  <div class="chat-container">
+    <div class="chat-header">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Lenox Chat Logo" style="height: 50px;">
+      <h2>Lenox Chat</h2>
+    </div>
+    <div id="chat-messages" class="chat-messages">
+      <!-- Messages and visualizations will be displayed here -->
+    </div>
+    <div class="chat-input-container">
+      <input type="text" id="query" class="chat-input" placeholder="Ask Lenox something..." autofocus>
+      <button id="sendButton" onclick="submitQuery()">Send</button>
+    </div>
+  </div>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+  <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Loading...">
+  </div>
+</body>
+
+</html>
