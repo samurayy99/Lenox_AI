@@ -24,10 +24,18 @@
       <input type="text" id="query" class="chat-input" placeholder="Ask Lenox something..." autofocus>
       <button id="sendButton" onclick="submitQuery()">Send</button>
     </div>
+    <!-- File upload form -->
+    <div class="upload-container">
+      <form id="uploadForm" enctype="multipart/form-data">
+        <label for="fileUpload">Upload documents:</label>
+        <input type="file" id="fileUpload" name="file" multiple>
+        <button type="button" onclick="uploadDocument()">Upload</button>
+      </form>
+    </div>
   </div>
   <script src="{{ url_for('static', filename='script.js') }}"></script>
   <div id="loadingIndicator" class="loading-indicator" style="display: none;">
-    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Loading...">
+    <img src="{{ url_for('static', filename='images/loading.gif') }}" alt="Loading...">
   </div>
 </body>
 
