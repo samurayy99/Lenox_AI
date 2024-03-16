@@ -20,6 +20,8 @@ async function submitQuery() {
     if (!query) return;
 
     appendMessage(query, 'user-message');
+     // Clear the input field after getting the query
+     queryInput.value = '';
     showLoadingIndicator(true);
 
     try {
@@ -37,10 +39,9 @@ async function submitQuery() {
         processResponseData(data);
     } catch (error) {
         console.error('Error fetching response:', error);
-        appendMessage('An error occurred while fetching the response.', 'error-message');
+        appendMessage('Ein Fehler ist aufgetreten.', 'error-message');
     } finally {
         showLoadingIndicator(false);
-        queryInput.value = '';
     }
 }
 
@@ -78,6 +79,38 @@ async function processUserInput(query) {
         showLoadingIndicator(false);
     }
 }
+
+// Function to upload documents
+async function uploadDocument() {
+    const fileInput = document.getElementById('fileUpload');
+    const formData = new FormData();
+    for (let i = 0; i < fileInput.files.length; i++) {
+        formData.append('file', fileInput.files[i]);
+    }
+
+    showLoadingIndicator(true);
+
+    try {
+        const response = await fetch('/upload', { // Adjust '/upload' to your actual endpoint
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`Network response was not OK. Status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('Upload successful', result);
+        appendMessage('Document uploaded successfully.', 'user-message');
+    } catch (error) {
+        console.error('Error uploading document:', error);
+        appendMessage('An error occurred while uploading the document.', 'error-message');
+    } finally {
+        showLoadingIndicator(false);
+    }
+}
+
 
 function appendMessage(content, type) {
     const chatMessages = document.getElementById('chat-messages');
@@ -149,17 +182,12 @@ async function handleComplexQuery(query) {
     // Implement logic for handling complex queries, possibly involving specialized API endpoints
 }
 
-function processResponseData(data) {
-    if (!data || typeof data !== 'object') {
-        console.error('Invalid data format:', data);
-        appendMessage('Received invalid data format.', 'error-message');
-        return;
-    }
 
+function processResponseData(data) {
     if (data.hasOwnProperty('type')) {
         if (data.type === 'visual') {
             const placeholder = appendVisualizationPlaceholder();
-            renderVisualization(data.content, placeholder.id);
+            renderVisualization(JSON.parse(data.content), placeholder.id);
         } else if (data.type === 'text') {
             appendMessage(data.content, 'bot-message');
         } else {
@@ -172,14 +200,9 @@ function processResponseData(data) {
     }
 }
 
-function renderVisualization(data) {
-    let visualizationPlaceholderId = `visualization-placeholder-${visualizationCount - 1}`;
-    let visualizationPlaceholder = document.getElementById(visualizationPlaceholderId);
 
-    if (!visualizationPlaceholder) {
-        console.error('Visualization placeholder not found');
-        return;
-    }
+function renderVisualization(data, placeholderId) {
+    let visualizationPlaceholder = document.getElementById(placeholderId);
     visualizationPlaceholder.style.display = 'block';
 
     if (data.error) {
@@ -188,30 +211,12 @@ function renderVisualization(data) {
         return;
     }
 
-    // Adjust the data structure if necessary
-    const plotData = data.data.map(trace => ({
-        ...trace,
-        mode: 'markers', // Example adjustment
-    }));
-
-    const layout = { ...{ title: 'Visualization' }, ...data.layout };
-    const config = { responsive: true };
-
-    Plotly.newPlot(visualizationPlaceholder, plotData, layout, config).catch(error => {
+    Plotly.newPlot(visualizationPlaceholder, data.data, data.layout).catch(error => {
         console.error('Plotly rendering error:', error);
         appendMessage('An error occurred while rendering the visualization.', 'error-message');
     });
 }
 
-
-// visualizationPlaceholder.style.display = 'block';
-
-// Define your visualization logic here, possibly with Plotly or another library
-// For example, with Plotly:
-// Plotly.newPlot(visualizationPlaceholder, data.data, data.layout).catch(error => {
-//     console.error('Plotly rendering error:', error);
-//     appendMessage('An error occurred while rendering the visualization.', 'error-message');
-// });
 
 
 function showLoadingIndicator(isLoading) {

@@ -4,50 +4,48 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
-import json
-import plotly
-import plotly.graph_objs as go
+from documents import DocumentHandler, allowed_file
 from utils import Lenox
 
-# Import the tools you use in your project
+# Import the tools you will use in your project
 from messari_tools import get_asset_data, get_news_feed, get_research_reports
 from lunarcrush_tools import get_lunarcrush_galaxy_score, analyze_crypto_sentiment, get_influential_crypto_assets
 from reddit_tools import get_reddit_data, count_mentions, analyze_sentiment, find_trending_topics
 from coingecko_tools import get_coingecko_market_data, get_liquidity_score, get_macd
 from cryptocompare_tools import get_crypto_data, get_historical_crypto_price
+from websearch_tools import search_with_searchapi
+from youtube_tools import search_youtube, process_youtube_video, query_youtube_video
+from etherscan_tools import get_whale_insights
 
 app = Flask(__name__)
 CORS(app)
 load_dotenv()
-
-# Database initialization with Flask-Migrate
-
-# Initialize Lenox with a broader range of tools
-lenox = Lenox([
-    get_crypto_data, get_reddit_data, get_coingecko_market_data,
-    get_liquidity_score, get_macd, get_historical_crypto_price,
-    get_lunarcrush_galaxy_score, analyze_sentiment, find_trending_topics,
-    get_influential_crypto_assets, analyze_crypto_sentiment,
-    get_asset_data, get_news_feed, get_research_reports
-])
 
 # Configure structured logging
 handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=1)
 handler.setLevel(logging.DEBUG)
 app.logger.addHandler(handler)
 logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-app.logger.info('Flask application has started')
+app.logger.info('Flask application started')
 
-@app.before_request
-def before_request_logging():
-    app.logger.debug(f'Incoming request: {request.method} {request.path}')
+# Initialize DocumentHandler
+document_handler = DocumentHandler()
 
-@app.after_request
-def after_request_logging(response):
-    app.logger.debug(f'Outgoing response: {response.status}')
-    return response
+# Initialize Lenox with a broader range of tools and the DocumentHandler
+lenox = Lenox(
+    tools=[
+        get_crypto_data, get_reddit_data, get_coingecko_market_data,
+        get_liquidity_score, get_macd, get_historical_crypto_price,
+        get_lunarcrush_galaxy_score, analyze_sentiment, find_trending_topics,
+        get_influential_crypto_assets, analyze_crypto_sentiment,
+        get_asset_data, get_news_feed, get_research_reports, search_with_searchapi,
+        search_youtube, process_youtube_video, query_youtube_video,
+        get_whale_insights
+    ],
+    document_handler=document_handler  # Pass the document_handler as a named argument
+)
 
 @app.route('/')
 def index():
@@ -57,35 +55,37 @@ def index():
 def handle_query():
     data = request.get_json()
     query = data.get('query', '')
-    session_id = data.get('session_id', 'default_session')  # You might want to handle session ID more dynamically
+    session_id = data.get('session_id', 'default_session')  # Sie möchten die Session-ID möglicherweise dynamischer handhaben
     if not query:
-        return jsonify({'error': 'Empty query.'}), 400
+        return jsonify({'error': 'Leere Anfrage.'}), 400
     response = lenox.convchain(query, session_id)
     return jsonify(response)
 
+@app.route('/upload', methods=['POST'])
+def upload_document():
+    if 'file' not in request.files:
+        return jsonify({'error': 'Kein Dateiteil'}), 400
 
-@app.route('/create_visualization', methods=['POST'])
-def create_visualization():
-    data = request.get_json()
-    x_data = data['x']
-    y_data = data['y']
-    graphJSON = lenox.create_visualization(x_data, y_data)
-    return jsonify(graphJSON)
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'Keine ausgewählte Datei'}), 400
+
+    if file and allowed_file(file.filename):
+        success, message = document_handler.save_document(file)
+        if success:
+            return jsonify({'message': message}), 200
+        else:
+            return jsonify({'error': message}), 400
 
 @app.errorhandler(500)
 def handle_error(error):
-    app.logger.error(f'Internal Server Error: {error}')
-    return jsonify({'error': 'An internal server error has occurred.'}), 500
+    app.logger.error(f'Interner Serverfehler: {error}')
+    return jsonify({'error': 'Ein interner Serverfehler ist aufgetreten.'}), 500
 
 @app.errorhandler(404)
 def handle_404_error(error):
-    app.logger.error(f'404 Not Found: {error}')
-    return jsonify({'error': 'Resource not found.'}), 404
-
-@app.route('/data', methods=['GET'])
-def get_data():
-    data = lenox.get_sample_data()
-    return jsonify(data)
+    app.logger.error(f'404 Nicht gefunden: {error}')
+    return jsonify({'error': 'Ressource nicht gefunden.'}), 404
 
 if __name__ == '__main__':
     app.run(debug=os.getenv('FLASK_DEBUG', 'False') == 'True')
