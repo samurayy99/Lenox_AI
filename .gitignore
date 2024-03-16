@@ -2,6 +2,5 @@ __pycache__
 .cursorignore
 venv-lenox
 .env
-lenox.db
 app.log
 app.log1
