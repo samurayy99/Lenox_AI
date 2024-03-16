@@ -4,5 +4,5 @@ venv-lenox
 .env
 app.log
 app.log1
-data
-static/images
+data/
+static/images/
