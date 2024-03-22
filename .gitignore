@@ -6,3 +6,7 @@ app.log
 app.log1
 data/
 static/images/
+documents/
+tmp/
+lenox.db
+requirements.txt
