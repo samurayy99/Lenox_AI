@@ -11,11 +11,14 @@ from utils import Lenox
 from messari_tools import get_asset_data, get_news_feed, get_research_reports
 from lunarcrush_tools import get_lunarcrush_galaxy_score, analyze_crypto_sentiment, get_influential_crypto_assets
 from reddit_tools import get_reddit_data, count_mentions, analyze_sentiment, find_trending_topics
+from cryptocompare_tools import get_historical_daily_stats, get_top_trading_pairs, get_news
 from coingecko_tools import get_coingecko_market_data, get_liquidity_score, get_macd
-from cryptocompare_tools import get_crypto_data, get_historical_crypto_price
 from websearch_tools import search_with_searchapi
 from youtube_tools import search_youtube, process_youtube_video, query_youtube_video
-from etherscan_tools import get_whale_insights
+from etherscan_tools import get_whale_insights, get_recent_blocks, get_block_transactions
+from coinpaprika_tools import get_global_market_overview, get_coin_social_media_and_dev_activity, get_exchange_info
+
+
 
 app = Flask(__name__)
 CORS(app)
@@ -31,20 +34,24 @@ format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 app.logger.info('Flask application started')
 
 # Initialize DocumentHandler
-document_handler = DocumentHandler()
+# Initialize DocumentHandler with correct paths
+document_handler = DocumentHandler(document_folder="documents", data_folder="data")
+
+
 
 # Initialize Lenox with a broader range of tools and the DocumentHandler
 lenox = Lenox(
     tools=[
-        get_crypto_data, get_reddit_data, get_coingecko_market_data,
-        get_liquidity_score, get_macd, get_historical_crypto_price,
-        get_lunarcrush_galaxy_score, analyze_sentiment, find_trending_topics,
-        get_influential_crypto_assets, analyze_crypto_sentiment,
-        get_asset_data, get_news_feed, get_research_reports, search_with_searchapi,
-        search_youtube, process_youtube_video, query_youtube_video,
-        get_whale_insights
+        get_historical_daily_stats, get_top_trading_pairs, get_news,
+        get_coingecko_market_data, get_liquidity_score, get_macd,
+        get_lunarcrush_galaxy_score, analyze_crypto_sentiment, get_influential_crypto_assets,
+        get_reddit_data, count_mentions, analyze_sentiment, find_trending_topics,
+        get_asset_data, get_news_feed, get_research_reports,
+        search_with_searchapi, search_youtube, process_youtube_video, query_youtube_video,
+        get_whale_insights, get_recent_blocks, get_block_transactions,
+        get_global_market_overview, get_coin_social_media_and_dev_activity, get_exchange_info
     ],
-    document_handler=document_handler  # Pass the document_handler as a named argument
+    document_handler=document_handler  # Pass the document handler as a named argument
 )
 
 @app.route('/')
@@ -88,4 +95,4 @@ def handle_404_error(error):
     return jsonify({'error': 'Ressource nicht gefunden.'}), 404
 
 if __name__ == '__main__':
-    app.run(debug=os.getenv('FLASK_DEBUG', 'False') == 'True')
+    app.run(host='0.0.0.0', debug=os.getenv('FLASK_DEBUG', 'False') == 'True')

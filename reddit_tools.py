@@ -1,7 +1,11 @@
 import praw
+from collections import Counter
 from textblob import TextBlob
 from langchain.agents import tool  # Use the @tool decorator
 import os
+
+from dotenv import load_dotenv
+load_dotenv()
 
 # Laden der Reddit API-Anmeldeinformationen aus Umgebungsvariablen
 reddit = praw.Reddit(

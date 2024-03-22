@@ -1,27 +1,28 @@
 document.addEventListener('DOMContentLoaded', () => {
     const queryInput = document.getElementById('query');
-    queryInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault(); // Prevent default behavior for all Enter key presses.
-            if (!e.shiftKey) {
-                submitQuery(); // Call submitQuery only if Shift is not pressed.
-            } else {
-                // Handle the Shift+Enter case here if needed.
-                // For now, it does nothing, allowing for a potential future implementation.
-            }
+
+    // Keydown event for handling query submission
+    queryInput.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault(); // Prevent default behavior for Enter key press without Shift.
+            await submitQuery(); // Call submitQuery only if Shift is not pressed.
         }
     });
-});
 
+    // Event listener for sending a message
+    document.getElementById('sendButton').addEventListener('click', async () => {
+        await submitQuery(); // Use submitQuery function to handle the query submission.
+    });
+
+});
 
 async function submitQuery() {
     const queryInput = document.getElementById('query');
     const query = queryInput.value.trim();
-    if (!query) return;
+    if (!query) return; // Exit if query is empty
 
     appendMessage(query, 'user-message');
-     // Clear the input field after getting the query
-     queryInput.value = '';
+    queryInput.value = ''; // Clear the input field after getting the query
     showLoadingIndicator(true);
 
     try {
@@ -43,7 +44,7 @@ async function submitQuery() {
     } finally {
         showLoadingIndicator(false);
     }
-}
+} // Corrected by adding the missing closing brace
 
 let visualizationCount = 0; // Global counter for visualization elements
 
@@ -80,51 +81,31 @@ async function processUserInput(query) {
     }
 }
 
-// Function to upload documents
-async function uploadDocument() {
-    const fileInput = document.getElementById('fileUpload');
-    const formData = new FormData();
-    for (let i = 0; i < fileInput.files.length; i++) {
-        formData.append('file', fileInput.files[i]);
-    }
 
-    showLoadingIndicator(true);
+// Funktion zum Hochladen der Datei
+async function uploadDocument() {
+    const fileUpload = document.getElementById('fileUpload'); // Korrigiert 'fileInput' zu 'fileUpload'
+    if (!fileUpload.files.length) {
+        console.error('Keine Datei ausgewählt');
+        return;
+    }
+    const file = fileUpload.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
 
     try {
-        const response = await fetch('/upload', { // Adjust '/upload' to your actual endpoint
+        const response = await fetch('/upload', {
             method: 'POST',
             body: formData
         });
-
-        if (!response.ok) {
-            throw new Error(`Network response was not OK. Status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        console.log('Upload successful', result);
-        appendMessage('Document uploaded successfully.', 'user-message');
+        // Handle response here if needed
     } catch (error) {
-        console.error('Error uploading document:', error);
-        appendMessage('An error occurred while uploading the document.', 'error-message');
-    } finally {
-        showLoadingIndicator(false);
+        console.error('Error uploading file:', error);
     }
-}
+} // Added missing closing brace here
 
 
-function appendMessage(content, type) {
-    const chatMessages = document.getElementById('chat-messages');
-    const messageDiv = document.createElement('div');
-    messageDiv.classList.add(type);
-    // Ersetze URLs durch klickbare Links
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    content = content.replace(urlRegex, function(url) {
-        return '<a href="' + url + '" target="_blank">' + url + '</a>';
-    });
-    messageDiv.innerHTML = content; // Verwende innerHTML statt innerText
-    chatMessages.appendChild(messageDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
+
 
 function appendVisualizationPlaceholder() {
     let chatMessages = document.getElementById('chat-messages');
@@ -147,6 +128,7 @@ function interpretUserInput(input) {
     }
 }
 
+
 async function fetchDataAndRespond(query) {
     try {
         const response = await fetch('/query', {
@@ -164,8 +146,12 @@ async function fetchDataAndRespond(query) {
     } catch (error) {
         console.error('Error fetching response:', error);
         appendMessage('Ein Fehler ist aufgetreten.', 'error-message');
+    } finally {
+        showLoadingIndicator(false);
     }
-}
+} 
+
+
 
 function adjustVisualizationParameters(query) {
     appendMessage(`Visualisierungsparameter für "${query}" angepasst.`, 'bot-message');
@@ -184,21 +170,49 @@ async function handleComplexQuery(query) {
 
 
 function processResponseData(data) {
-    if (data.hasOwnProperty('type')) {
-        if (data.type === 'visual') {
-            const placeholder = appendVisualizationPlaceholder();
-            renderVisualization(JSON.parse(data.content), placeholder.id);
-        } else if (data.type === 'text') {
-            appendMessage(data.content, 'bot-message');
+    if (data.type === 'visual') {
+        const visualizationContainer = appendVisualizationPlaceholder(); // Erstelle und erhalte den neuen Platzhalter
+        if (visualizationContainer) {
+            try {
+                const visualizationData = JSON.parse(data.content);
+                Plotly.react(visualizationContainer, visualizationData.data, visualizationData.layout);
+            } catch (e) {
+                console.error('Error parsing visualization data:', e);
+            }
         } else {
-            console.error('Unexpected data type:', data.type);
-            appendMessage('Received unexpected data type.', 'error-message');
+            console.error('Visualization container not found');
         }
+    } else if (data.type === 'text') {
+        appendMessage(data.content, 'bot-message');
     } else {
-        console.error('Invalid response structure: missing "type" property.');
-        appendMessage('Received invalid response structure.', 'error-message');
+        console.error('Unexpected response type:', data.type);
     }
 }
+
+
+function appendMessage(message, className) {
+    const chatMessages = document.getElementById('chat-messages');
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add(className);
+    // Konvertiere URLs in anklickbare Links
+    const convertedMessage = convertUrlsToLinks(message);
+    messageDiv.innerHTML = convertedMessage;
+    chatMessages.appendChild(messageDiv);
+    scrollToLatestMessage();
+}
+
+function convertUrlsToLinks(text) {
+    const urlRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+    return text.replace(urlRegex, function(url) {
+        return '<a href="' + url + '" target="_blank">' + url + '</a>';
+    });
+}
+
+function scrollToLatestMessage() {
+    const chatMessages = document.getElementById('chat-messages');
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
 
 
 function renderVisualization(data, placeholderId) {
@@ -222,6 +236,10 @@ function renderVisualization(data, placeholderId) {
 function showLoadingIndicator(isLoading) {
     const loadingIndicator = document.getElementById('loadingIndicator');
     if (loadingIndicator) {
-        loadingIndicator.style.display = isLoading ? 'block' : 'none';
-    }
-}
+        if (isLoading) {
+            loadingIndicator.style.display = 'block';
+        } else {
+            loadingIndicator.style.display = 'none';
+        }
+    } 
+} 

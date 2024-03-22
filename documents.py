@@ -5,13 +5,10 @@ from werkzeug.utils import secure_filename
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext, load_index_from_storage
 from llama_index.core.langchain_helpers.agents import IndexToolConfig, LlamaIndexTool
 
-# Assuming OpenAI API key is set in your environment variables
 openai_api_key = os.getenv("OPENAI_API_KEY")
-
 current_script_path = os.path.dirname(os.path.abspath(__file__))
 document_folder = os.path.join(current_script_path, 'documents') + '/'
 data_folder = os.path.join(current_script_path, 'data') + '/'
-
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
@@ -21,10 +18,9 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 class DocumentHandler:
-    def __init__(self, document_folder=document_folder, data_folder=data_folder):
+    def __init__(self, document_folder, data_folder):
         self.document_folder = document_folder
         self.data_folder = data_folder
-        self.index = None
         self._load_or_create_index()
 
     def _load_or_create_index(self):
@@ -54,8 +50,6 @@ class DocumentHandler:
             tool_kwargs={"return_direct": True},
         )
         tool = LlamaIndexTool.from_tool_config(tool_config)
-        
-        # Using the tool to query
         response = tool(prompt)
         return response
 

@@ -15,91 +15,46 @@ Traceback (most recent call last):
   File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 855, in dispatch_request
     return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/main.py", line 58, in handle_query
+  File "/Users/lenox27/LENOX/main.py", line 68, in handle_query
     response = lenox.convchain(query, session_id)
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/utils.py", line 68, in convchain
-    result = self.chain_with_history.invoke({"input": query}, config={"configurable": {"session_id": self.session_id}})
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/runnables/base.py", line 4219, in invoke
-    return self.bound.invoke(
-           ^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/runnables/base.py", line 4219, in invoke
-    return self.bound.invoke(
-           ^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/runnables/base.py", line 2218, in invoke
-    input = step.invoke(
-            ^^^^^^^^^^^^
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/runnables/base.py", line 4219, in invoke
-    return self.bound.invoke(
-           ^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/runnables/passthrough.py", line 453, in invoke
-    return self._call_with_config(self._invoke, input, config, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/runnables/base.py", line 1405, in _call_with_config
-    context.run(
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/runnables/config.py", line 326, in call_func_with_variable_args
-    return func(input, **kwargs)  # type: ignore[call-arg]
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/runnables/passthrough.py", line 440, in _invoke
-    **self.mapper.invoke(
-      ^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/runnables/base.py", line 2855, in invoke
-    output = {key: future.result() for key, future in zip(steps, futures)}
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/runnables/base.py", line 2855, in <dictcomp>
-    output = {key: future.result() for key, future in zip(steps, futures)}
-                   ^^^^^^^^^^^^^^^
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/concurrent/futures/_base.py", line 449, in result
-    return self.__get_result()
-           ^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
-    raise self._exception
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/concurrent/futures/thread.py", line 58, in run
-    result = self.fn(*self.args, **self.kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/runnables/base.py", line 4219, in invoke
-    return self.bound.invoke(
-           ^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/runnables/base.py", line 3669, in invoke
-    return self._call_with_config(
-           ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/runnables/base.py", line 1405, in _call_with_config
-    context.run(
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/runnables/config.py", line 326, in call_func_with_variable_args
-    return func(input, **kwargs)  # type: ignore[call-arg]
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/runnables/base.py", line 3543, in _invoke
-    output = call_func_with_variable_args(
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/runnables/config.py", line 326, in call_func_with_variable_args
-    return func(input, **kwargs)  # type: ignore[call-arg]
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/runnables/history.py", line 409, in _enter_history
-    return hist.messages.copy()
-           ^^^^^^^^^^^^^^^^^^
-AttributeError: 'function' object has no attribute 'copy'
+  File "/Users/lenox27/LENOX/utils.py", line 72, in convchain
+    return handler(query, chat_history, session_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 125, in handle_general_query
+    context_messages = [msg.content for msg in self.aggregate_context(chat_history)]
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 153, in aggregate_context
+    summarized_context = summarize_chain.run({"input_documents": documents})
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/_api/deprecation.py", line 145, in warning_emitting_wrapper
+    return wrapped(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain/chains/base.py", line 545, in run
+    return self(args[0], callbacks=callbacks, tags=tags, metadata=metadata)[
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/_api/deprecation.py", line 145, in warning_emitting_wrapper
+    return wrapped(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain/chains/base.py", line 378, in __call__
+    return self.invoke(
+           ^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain/chains/base.py", line 163, in invoke
+    raise e
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain/chains/base.py", line 153, in invoke
+    self._call(inputs, run_manager=run_manager)
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain/chains/combine_documents/base.py", line 137, in _call
+    output, extra_return_dict = self.combine_docs(
+                                ^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain/chains/combine_documents/map_reduce.py", line 228, in combine_docs
+    [{self.document_variable_name: d.page_content, **kwargs} for d in docs],
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain/chains/combine_documents/map_reduce.py", line 228, in <listcomp>
+    [{self.document_variable_name: d.page_content, **kwargs} for d in docs],
+                                   ^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'page_content'
 Interner Serverfehler: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.
 Flask application started
-Flask application started
-Flask application started
-Flask application started
-Flask application started
-Flask application started
-Flask application started
-Flask application started
-Flask application started
-Flask application started
-Flask application started
-Flask application started
-Flask application started
-Flask application started
-Flask application started
-404 Nicht gefunden: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-Flask application started
-404 Nicht gefunden: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-Flask application started
-404 Nicht gefunden: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
 Exception on /query [POST]
 Traceback (most recent call last):
   File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 1463, in wsgi_app
@@ -117,26 +72,43 @@ Traceback (most recent call last):
   File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 855, in dispatch_request
     return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/main.py", line 58, in handle_query
+  File "/Users/lenox27/LENOX/main.py", line 68, in handle_query
     response = lenox.convchain(query, session_id)
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/utils.py", line 61, in convchain
+  File "/Users/lenox27/LENOX/utils.py", line 72, in convchain
     return handler(query, chat_history, session_id)
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/utils.py", line 115, in handle_general_query
-    prompt_text = self.create_prompt(context_messages, query)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/utils.py", line 137, in create_prompt
-    prompt_text = self.prompt_engine.generate_dynamic_prompt(user_query, context_messages)
-                  ^^^^^^^^^^^^^^^^^^
-AttributeError: 'Lenox' object has no attribute 'prompt_engine'
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 125, in handle_general_query
+    context_messages = [msg.content for msg in self.aggregate_context(chat_history)]
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 152, in aggregate_context
+    summarized_context = summarize_chain.run({"input_documents": documents})
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/_api/deprecation.py", line 145, in warning_emitting_wrapper
+    return wrapped(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain/chains/base.py", line 545, in run
+    return self(args[0], callbacks=callbacks, tags=tags, metadata=metadata)[
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/_api/deprecation.py", line 145, in warning_emitting_wrapper
+    return wrapped(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain/chains/base.py", line 378, in __call__
+    return self.invoke(
+           ^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain/chains/base.py", line 163, in invoke
+    raise e
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain/chains/base.py", line 153, in invoke
+    self._call(inputs, run_manager=run_manager)
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain/chains/combine_documents/base.py", line 137, in _call
+    output, extra_return_dict = self.combine_docs(
+                                ^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain/chains/combine_documents/map_reduce.py", line 228, in combine_docs
+    [{self.document_variable_name: d.page_content, **kwargs} for d in docs],
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain/chains/combine_documents/map_reduce.py", line 228, in <listcomp>
+    [{self.document_variable_name: d.page_content, **kwargs} for d in docs],
+                                   ^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'page_content'
 Interner Serverfehler: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.
-Flask application started
-404 Nicht gefunden: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-Flask application started
-404 Nicht gefunden: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-Flask application started
-404 Nicht gefunden: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-Flask application started
-Flask application started
 Flask application started

@@ -1,113 +1,84 @@
 import os
 import requests
-import requests
-from langchain.agents import tool  # Use the @tool decorator
+import logging
+from langchain.agents import tool  # Import the @tool decorator
 
-class EtherscanTool:
+logging.basicConfig(level=logging.INFO)
+
+# Global variables for API configuration
+API_KEY = os.getenv('ETHERSCAN_API_KEY')
+BASE_URL = "https://api.etherscan.io/api"
+
+@tool
+def get_recent_blocks(block_count: int = 10) -> list:
     """
-    A tool for interacting with the Etherscan API to fetch blockchain data.
+    Fetches a list of recent block numbers. This is a placeholder implementation.
     
-    Attributes:
-        api_key (str): The API key used for authenticating with the Etherscan API.
-        base_url (str): The base URL for the Etherscan API.
+    Args:
+        block_count (int): The number of recent blocks to fetch.
+    
+    Returns:
+        list: A list of recent block numbers.
     """
-    def __init__(self, api_key):
-        """
-        Initializes the EtherscanTool with an API key.
-        
-        Args:
-            api_key (str): The API key for Etherscan.
-        """
-        self.api_key = api_key
-        self.base_url = "https://api.etherscan.io/api"
+    # Placeholder implementation, replace with actual logic to fetch block numbers
+    return [12345678 - i for i in range(block_count)]
 
-    def get_recent_blocks(self, block_count):
-        """
-        Fetches a list of recent block numbers. This is a placeholder implementation.
-        
-        Args:
-            block_count (int): The number of recent blocks to fetch.
-        
-        Returns:
-            list: A list of recent block numbers.
-        """
-        return [12345678 - i for i in range(block_count)]
-
-    def get_block_transactions(self, block_number):
-        """
-        Fetches transactions for a given block number from the Etherscan API.
-        
-        Args:
-            block_number (int): The block number to fetch transactions for.
-        
-        Returns:
-            list: A list of transactions for the given block number, if the request is successful. Otherwise, returns an empty list.
-        """
-        params = {
-            'module': 'proxy',
-            'action': 'eth_getBlockByNumber',
-            'tag': hex(block_number),
-            'boolean': 'true',
-            'apikey': self.api_key
-        }
-        response = requests.get(self.base_url, params=params)
-        if response.status_code == 200:
-            try:
-                response_data = response.json()
-                if 'result' in response_data and isinstance(response_data['result'], dict):
-                    return response_data['result'].get('transactions', [])
-                else:
-                    logging.error(f"API-Anfrage fehlgeschlagen mit Status-Code: {response.status_code} und Antwort: {response.text}")
-                    return []
-            except ValueError as e:
-                logging.error(f"Fehler beim Parsen der JSON-Antwort: {e}")
+@tool
+def get_block_transactions(block_number: int) -> list:
+    """
+    Fetches transactions for a given block number from the Etherscan API.
+    
+    Args:
+        block_number (int): The block number to fetch transactions for.
+    
+    Returns:
+        list: A list of transactions for the given block number.
+    """
+    params = {
+        'module': 'proxy',
+        'action': 'eth_getBlockByNumber',
+        'tag': f"0x{block_number:x}",
+        'boolean': 'true',
+        'apikey': API_KEY
+    }
+    response = requests.get(BASE_URL, params=params)
+    if response.status_code == 200:
+        try:
+            response_data = response.json()
+            if 'result' in response_data and isinstance(response_data['result'], dict):
+                return response_data['result'].get('transactions', [])
+            else:
+                logging.error(f"API request failed with response: {response.text}")
                 return []
-        else:
-            logging.error(f"API-Anfrage fehlgeschlagen mit Status-Code: {response.status_code} und Antwort: {response.text}")
+        except ValueError as e:
+            logging.error(f"Error parsing JSON response: {e}")
             return []
-    
-    
-    def get_whale_insights(self, block_count: int = 10, threshold: int = 1e18) -> dict:
-        """
-        Provides insights into whale activities on the Ethereum blockchain by analyzing recent transactions.
-        
-        Args:
-            block_count (int): The number of recent blocks to analyze.
-            threshold (int): The value threshold (in wei) to classify a transaction as whale activity.
-        
-        Returns:
-            dict: A dictionary containing information about whale activities, including the block number and value of transactions that meet the threshold.
-        """
-        whale_activities = []
-        for block_number in self.get_recent_blocks(block_count):
-            transactions = self.get_block_transactions(block_number)
-            for tx in transactions:
-                if int(tx['value'], 16) >= threshold:
-                    whale_activities.append({'blockNumber': block_number, 'value': int(tx['value'], 16) / 1e18})
-        return {'whale_activities': whale_activities}
-
-# Instantiate the EtherscanTool with the API key
-etherscan_tool = EtherscanTool(api_key=os.getenv('ETHERSCAN_API_KEY'))
+    else:
+        logging.error(f"API request failed with status code: {response.status_code}")
+        return []
 
 @tool
 def get_whale_insights(block_count: int = 10, threshold: int = 1e18) -> str:
     """
-    A decorated function that provides a string summary of whale activities on the Ethereum blockchain.
+    Provides a string summary of whale activities on the Ethereum blockchain by analyzing recent transactions.
     
-    This function utilizes the EtherscanTool to fetch and analyze blockchain transactions.
-    
-    Parameters:
+    Args:
         block_count (int): The number of recent blocks to analyze.
-        threshold (int): The value threshold to classify a transaction as whale activity.
+        threshold (int): The value threshold (in wei) to classify a transaction as whale activity.
     
     Returns:
         str: A string summarizing whale activities detected in the recent blocks.
     """
-    insights = etherscan_tool.get_whale_insights(block_count, threshold)
+    whale_activities = []
+    for block_number in get_recent_blocks(block_count=block_count):
+        transactions = get_block_transactions(block_number)
+        for tx in transactions:
+            if int(tx['value'], 16) >= threshold:
+                whale_activities.append({'blockNumber': block_number, 'value': int(tx['value'], 16) / 1e18})
     
-    if insights and 'whale_activities' in insights:
+    if whale_activities:
         response = "Recent whale activities detected:\n"
-        for activity in insights['whale_activities']:
+        for activity in whale_activities:
             response += f"Block: {activity['blockNumber']}, Value: {activity['value']} ETH\n"
     else:
         response = "No significant whale activities detected in the recent blocks."
