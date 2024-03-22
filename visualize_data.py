@@ -1,6 +1,7 @@
 from typing import Dict, List, Union, Callable
 import pandas as pd
 import plotly
+from plotly.io import to_json
 import plotly.express as px
 import json
 from dataclasses import dataclass, field
@@ -26,10 +27,11 @@ class VisualizationConfig:
         }
         self.plotly_function = plot_functions.get(self.visualization_type, px.line)
 
-def create_visualization(config: VisualizationConfig) -> str:
+
+def create_visualization(config: VisualizationConfig):
     df = pd.DataFrame(config.data)
     if config.visualization_type == 'pie':
-        fig: Figure = config.plotly_function(df, values='y', names='x', **config.additional_kwargs)
+        fig = config.plotly_function(df, values='y', names='x', **config.additional_kwargs)
     else:
-        fig: Figure = config.plotly_function(df, x='x', y='y', **config.additional_kwargs)
-    return json.dumps({"data": fig.data, "layout": fig.layout}, cls=plotly.utils.PlotlyJSONEncoder)
+        fig = config.plotly_function(df, x='x', y='y', **config.additional_kwargs)
+    return fig

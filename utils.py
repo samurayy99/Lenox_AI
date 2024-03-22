@@ -2,10 +2,17 @@ import openai
 import pandas as pd
 import json
 import logging
+import os
+import plotly
+from autogen import ConversableAgent
+from autogen.agentchat.contrib.capabilities.teachability import Teachability
+from langsmith import wrappers
+from openai import OpenAI
 from visualize_data import VisualizationConfig, create_visualization
 from typing import Any, Dict, List, Union
 from langchain_core.utils.function_calling import convert_to_openai_function
 from langchain_openai import ChatOpenAI
+from langchain_community.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
 from langchain.agents import AgentExecutor
@@ -16,11 +23,13 @@ from langchain.agents.format_scratchpad import format_to_openai_functions
 from lenox_memory import SQLChatMessageHistory
 from documents import DocumentHandler
 from prompts import PromptEngine
+from langchain.chains import load_summarize_chain
+
 
 class Lenox:
     def __init__(self, tools, document_handler: DocumentHandler, prompt_engine: PromptEngine = None):
-        # Initialization similar to your original setup.
         self.functions = [convert_to_openai_function(f) for f in tools]
+        # Update the model initialization to use the recommended approach
         self.model = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0.5).bind(functions=self.functions)
         self.document_handler = document_handler
         self.prompt_engine = prompt_engine if prompt_engine else PromptEngine()
@@ -53,14 +62,17 @@ class Lenox:
         if not query:
             return {"type": "text", "content": "Please enter a query."}
 
-        # Update the session ID and add the new message using the correct method.
+        # Set the current session ID and add the new user message
         self.memory.session_id = session_id
-        self.memory.add_message(HumanMessage(content=query, sender="user"))  # Use add_message here.
-        chat_history = self.memory.messages()
+        self.memory.add_message(HumanMessage(content=query, sender="user"))
+        
+        # Retrieve and possibly trim the chat history before passing it to the model
+        chat_history = self.memory.get_trimmed_messages(limit=7)  # Keep only the last 7 messages
 
-        # Execute the appropriate query handler leveraging LangChain's routing
+        # Determine the appropriate handler for the query
         handler = self.determine_query_handler(query)
         return handler(query, chat_history, session_id)
+
 
     def determine_query_handler(self, query: str):
         if self.is_visualization_query(query):
@@ -132,7 +144,9 @@ class Lenox:
     def aggregate_context(self, chat_history: List[Dict[str, Any]]) -> List[Dict[str, str]]:
         # Aggregate recent messages to provide a rich context for the model
         # You can customize the number of messages to include based on your model's capacity and your use case
-        return chat_history[-5:]
+        return chat_history[-7:]
+
+    
 
     def create_prompt(self, context_messages: List[Dict[str, str]], user_query: str) -> str:
         # Construct a prompt with the aggregated context and the current user query
@@ -160,9 +174,14 @@ class Lenox:
         return data
     
     def handle_document_query(self, query, chat_history, session_id):
-        response = self.document_handler.query(query)
-        if not isinstance(response, str):
-            logging.error(f"Expected 'response' to be a string, got {type(response)}")
-            return {"type": "error", "content": "Error processing the document query."}
+        doc_response = self.document_handler.query(query)
+        if doc_response:
+            # Tailor the response based on the content found
+            response = f"I found something that might be helpful: '{doc_response}'"
+        else:
+            # Provide a helpful response when no relevant information is found
+            response = "I couldn't find anything specific in the documents. Can I help with something else?"
+        
         self.memory.add_message(AIMessage(content=response, sender="system", session_id=session_id))
         return {"type": "text", "content": response}
+

@@ -8,53 +8,54 @@ from langchain.agents import tool  # Use the @tool decorator
 class CryptoDataInput(BaseModel):
     symbol: str = Field(..., description="The symbol of the cryptocurrency (e.g., BTC, ETH)")
 
+
 @tool
-def get_crypto_data(symbol: str) -> str:
+def get_historical_daily_stats(symbol: str, currency: str = "USD") -> str:
     """
-    Returns the current price of the specified cryptocurrency symbol using CryptoCompare API.
+    Returns historical day statistics for the specified cryptocurrency symbol using CryptoCompare API.
     """
-    validated_input = CryptoDataInput(symbol=symbol)
-    api_url = "https://min-api.cryptocompare.com/data/price"
-    params = {
-        "fsym": validated_input.symbol,
-        "tsyms": "USD",
-        "api_key": os.getenv('CRYPTOCOMPARE_API_KEY')
-    }
+    api_url = f"https://min-api.cryptocompare.com/data/histoday?fsym={symbol}&tsym={currency}&limit=30&api_key={os.getenv('CRYPTOCOMPARE_API_KEY')}"
     try:
-        response = requests.get(api_url, params=params)
+        response = requests.get(api_url)
         data = response.json()
-        if not data:
-            raise Exception("Error fetching cryptocurrency data.")
-        price = data['USD']
-        return f"The current price of {validated_input.symbol} is ${price}."
+        if not data or 'Data' not in data:
+            raise Exception("Error fetching historical day statistics.")
+        historical_data = data['Data']
+        formatted_data = '\n'.join([f"Date: {datetime.datetime.fromtimestamp(day['time']).strftime('%Y-%m-%d')}, Close: {day['close']}" for day in historical_data])
+        return f"Historical daily stats for {symbol} in {currency}:\n{formatted_data}"
     except requests.RequestException as e:
         return f"Error during API request: {str(e)}"
 
 @tool
-def get_historical_crypto_price(symbol: str, currency: str = "USD", limit: int = 30, aggregate: int = 1, toTs: datetime.datetime = datetime.datetime.now()) -> str:
+def get_top_trading_pairs(symbol: str, limit: int = 5) -> str:
     """
-    Fetches and returns historical price data for a specified cryptocurrency using CryptoCompare API.
-
-    Parameters:
-    - symbol (str): The symbol of the cryptocurrency (e.g., BTC, ETH).
-    - currency (str): The fiat currency to convert into (default: USD).
-    - limit (int): The number of data points to return.
-    - aggregate (int): Aggregation level (default: 1).
-    - toTs (datetime): Last data point timestamp (default: now).
-
-    Returns:
-    str: A string containing historical prices.
+    Returns the top trading pairs for the specified cryptocurrency symbol using CryptoCompare API.
     """
+    api_url = f"https://min-api.cryptocompare.com/data/top/pairs?fsym={symbol}&limit={limit}&api_key={os.getenv('CRYPTOCOMPARE_API_KEY')}"
     try:
-        timestamp = int(toTs.timestamp())
-        api_url = f"https://min-api.cryptocompare.com/data/v2/histoday?fsym={symbol}&tsym={currency}&limit={limit}&aggregate={aggregate}&toTs={timestamp}&api_key={os.getenv('CRYPTOCOMPARE_API_KEY')}"
         response = requests.get(api_url)
         data = response.json()
-        if data.get("Response") == "Success":
-            prices = data["Data"]["Data"]
-            prices_str = "\n".join([f"Time: {datetime.datetime.fromtimestamp(price['time']).strftime('%Y-%m-%d')}, Price: {price['close']}" for price in prices])
-            return f"Historical prices for {symbol} in {currency}:\n{prices_str}"
-        else:
-            return "Error: Unable to fetch historical price data."
-    except Exception as e:
-        return f"Exception occurred: {str(e)}" 
+        if not data or 'Data' not in data:
+            raise Exception("Error fetching top trading pairs.")
+        pairs_data = data['Data']
+        formatted_data = '\n'.join([f"Market: {pair['exchange']}, Pair: {pair['toSymbol']}, Volume24h: {pair['volume24h']}" for pair in pairs_data])
+        return f"Top trading pairs for {symbol}:\n{formatted_data}"
+    except requests.RequestException as e:
+        return f"Error during API request: {str(e)}"
+
+@tool
+def get_news(symbol: str) -> str:
+    """
+    Returns the latest news for the specified cryptocurrency symbol using CryptoCompare API.
+    """
+    api_url = f"https://min-api.cryptocompare.com/data/v2/news/?categories={symbol}&api_key={os.getenv('CRYPTOCOMPARE_API_KEY')}"
+    try:
+        response = requests.get(api_url)
+        data = response.json()
+        if not data or 'Data' not in data:
+            raise Exception("Error fetching news.")
+        news_data = data['Data']
+        formatted_news = '\n'.join([f"Title: {news['title']}, URL: {news['url']}" for news in news_data])
+        return f"Latest news for {symbol}:\n{formatted_news}"
+    except requests.RequestException as e:
+        return f"Error during API request: {str(e)}"

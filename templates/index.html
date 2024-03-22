@@ -18,7 +18,10 @@
       <h2>Lenox Chat</h2>
     </div>
     <div id="chat-messages" class="chat-messages">
-      <!-- Messages and visualizations will be displayed here -->
+      <!-- Messages will be displayed here -->
+    </div>
+    <div id="visualization" class="visualization">
+      <!-- Visualizations will be displayed here -->
     </div>
     <div class="chat-input-container">
       <input type="text" id="query" class="chat-input" placeholder="Ask Lenox something..." autofocus>
@@ -35,8 +38,9 @@
   </div>
   <script src="{{ url_for('static', filename='script.js') }}"></script>
   <div id="loadingIndicator" class="loading-indicator" style="display: none;">
-    <img src="{{ url_for('static', filename='images/loading.gif') }}" alt="Loading...">
-  </div>
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Loading...">
+  </div
+  
 </body>
 
 </html>
