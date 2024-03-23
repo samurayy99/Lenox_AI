@@ -4,7 +4,8 @@ import json
 import logging
 import os
 import plotly
-from autogen import ConversableAgent
+from langchain.tools import Tool, BaseTool
+from autogen import ConversableAgent, OpenAIWrapper 
 from autogen.agentchat.contrib.capabilities.teachability import Teachability
 from langsmith import wrappers
 from openai import OpenAI
@@ -24,54 +25,74 @@ from lenox_memory import SQLChatMessageHistory
 from documents import DocumentHandler
 from prompts import PromptEngine
 from langchain.chains import load_summarize_chain
+from dotenv import load_dotenv
 
 
-class Lenox:
+class Lenox(ConversableAgent):
     def __init__(self, tools, document_handler: DocumentHandler, prompt_engine: PromptEngine = None):
-        self.functions = [convert_to_openai_function(f) for f in tools]
-        # Update the model initialization to use the recommended approach
-        self.model = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0.5).bind(functions=self.functions)
-        self.document_handler = document_handler
-        self.prompt_engine = prompt_engine if prompt_engine else PromptEngine()
+        load_dotenv()
 
-        # Chat prompt template definition remains the same.
+        llm_config = {'model': os.getenv('MODEL_NAME', 'gpt-3.5-turbo-0125')}
+
+        super().__init__(name="Lenox", human_input_mode="NEVER", llm_config=llm_config)
+        self.logger = logging.getLogger(__name__)
+        self.document_handler = document_handler
+        self.prompt_engine = prompt_engine or PromptEngine()
+        self.memory = SQLChatMessageHistory(session_id=os.getenv("SESSION_ID", "my_session"), connection_string=os.getenv("DB_CONNECTION_STRING", "sqlite:///lenox.db"))
+
+        self.teachability = Teachability(path_to_db_dir=os.getenv("TEACHABILITY_DB_DIR", "./tmp/teachable_agent_db"))
+        self.teachability.add_to_agent(self)
+
         self.prompt = ChatPromptTemplate.from_messages([
-            ("system", "Hello, Volcano! I'm Lenox, your AI ally, not just in the cryptocurrency domain but also your companion for private and business life. Equipped with advanced NLP techniques, I can understand and engage in more nuanced conversations, making our interactions more dynamic and personalized."),
-            ("user", "Hi Lenox! I'm looking forward to our journey together."),
+            ("system", "Hello, I'm Lenox, your advanced AI assistant."),
             MessagesPlaceholder(variable_name="chat_history"),
-            ("system", "Just so you know, I love learning new things and growing with you. Feel free to joke around or share how you feel!"),
             ("user", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad"),
         ])
 
+        # Registering functions from tools for dynamic invocation
+        self.tools = [convert_to_openai_function(f) for f in tools]
 
-        # Instead of using RunnableWithMessageHistory directly, we maintain the previous chain structure.
-        self.chain = RunnablePassthrough.assign(
-            agent_scratchpad=lambda x: format_to_openai_functions(x.get("intermediate_steps", []))
-        ) | self.prompt | self.model | OpenAIFunctionsAgentOutputParser()
+        # Double-check if the tools are correctly formatted
+        assert all(isinstance(tool, Tool) for tool in self.tools), "All tools should be instances of langchain Tool class."
 
-        # Agent executor initialization remains unchanged.
-        self.qa = AgentExecutor(agent=self.chain, tools=tools, verbose=False)
+        # Initialize AgentExecutor after all other setup is complete
+        # Ensure that 'agent' is recognized as a valid agent by AgentExecutor
+        self.agent_executor = AgentExecutor(agent=self, tools=self.tools, verbose=True)
 
-        # Memory management setup using SQLAlchemy for conversation history.
-        self.memory = SQLChatMessageHistory(session_id="my_session", connection_string="sqlite:///lenox.db")
-
+        for tool in self.tools:
+            if hasattr(tool, "description"):
+                self.register_function(tool, caller=self, executor=self.agent_executor, name=tool.name, description=tool.description)
+            else:
+                self.logger.warning(f"Tool {tool.name} lacks a description and wasn't registered.")
 
     def convchain(self, query: str, session_id: str = "my_session") -> dict:
-        logging.debug(f"Received query: {query}")
         if not query:
             return {"type": "text", "content": "Please enter a query."}
 
-        # Set the current session ID and add the new user message
         self.memory.session_id = session_id
         self.memory.add_message(HumanMessage(content=query, sender="user"))
-        
-        # Retrieve and possibly trim the chat history before passing it to the model
-        chat_history = self.memory.get_trimmed_messages(limit=7)  # Keep only the last 7 messages
 
-        # Determine the appropriate handler for the query
-        handler = self.determine_query_handler(query)
-        return handler(query, chat_history, session_id)
+        chat_history = self.memory.get_trimmed_messages(limit=15)
+        self.process_query_with_teachability(query, chat_history)
+
+        response = self.agent_executor.invoke({"input": query, "chat_history": chat_history})
+
+        self.memory.add_message(AIMessage(content=response['output'], sender="system"))
+        return response
+
+    def process_query_with_teachability(self, query: str, chat_history: list):
+        self.teachability.process_last_received_message(query)
+        related_memos = self.teachability.get_related_memos(query, n_results=10, threshold=1.5)
+        if related_memos:
+            self.logger.info(f"Recalled information: {related_memos}")
+            chat_history.extend(related_memos)
+
+
+    def handle_query(self, query: str, chat_history: list, session_id: str) -> dict:
+        # Implement specific query handling logic here
+        # For demonstration, simply returning a placeholder response
+        return {"type": "text", "content": "Query handling logic goes here."}
 
 
     def determine_query_handler(self, query: str):
