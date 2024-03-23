@@ -24,7 +24,7 @@ Traceback (most recent call last):
   File "/Users/lenox27/LENOX/utils.py", line 125, in handle_general_query
     context_messages = [msg.content for msg in self.aggregate_context(chat_history)]
                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/utils.py", line 153, in aggregate_context
+  File "/Users/lenox27/LENOX/utils.py", line 152, in aggregate_context
     summarized_context = summarize_chain.run({"input_documents": documents})
                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/_api/deprecation.py", line 145, in warning_emitting_wrapper
@@ -81,9 +81,9 @@ Traceback (most recent call last):
   File "/Users/lenox27/LENOX/utils.py", line 125, in handle_general_query
     context_messages = [msg.content for msg in self.aggregate_context(chat_history)]
                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/utils.py", line 152, in aggregate_context
-    summarized_context = summarize_chain.run({"input_documents": documents})
-                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 157, in aggregate_context
+    summarized_context = summarize_chain.run(input_for_summarization)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/langchain_core/_api/deprecation.py", line 145, in warning_emitting_wrapper
     return wrapped(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -111,4 +111,9 @@ Traceback (most recent call last):
                                    ^^^^^^^^^^^^^^
 AttributeError: 'dict' object has no attribute 'page_content'
 Interner Serverfehler: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.
+Flask application started
+Flask application started
+Flask application started
+Flask application started
+Flask application started
 Flask application started
