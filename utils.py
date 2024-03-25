@@ -2,18 +2,11 @@ import openai
 import pandas as pd
 import json
 import logging
-import os
 import plotly
-from langchain.tools import Tool, BaseTool
-from autogen import ConversableAgent, OpenAIWrapper 
-from autogen.agentchat.contrib.capabilities.teachability import Teachability
-from langsmith import wrappers
-from openai import OpenAI
 from visualize_data import VisualizationConfig, create_visualization
 from typing import Any, Dict, List, Union
 from langchain_core.utils.function_calling import convert_to_openai_function
 from langchain_openai import ChatOpenAI
-from langchain_community.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
 from langchain.agents import AgentExecutor
@@ -24,76 +17,54 @@ from langchain.agents.format_scratchpad import format_to_openai_functions
 from lenox_memory import SQLChatMessageHistory
 from documents import DocumentHandler
 from prompts import PromptEngine
-from langchain.chains import load_summarize_chain
-from dotenv import load_dotenv
+from slack_service import SlackService
 
 
-class Lenox(ConversableAgent):
+class Lenox:
     def __init__(self, tools, document_handler: DocumentHandler, prompt_engine: PromptEngine = None):
-        load_dotenv()
-
-        llm_config = {'model': os.getenv('MODEL_NAME', 'gpt-3.5-turbo-0125')}
-
-        super().__init__(name="Lenox", human_input_mode="NEVER", llm_config=llm_config)
-        self.logger = logging.getLogger(__name__)
+        # Initialization similar to your original setup.
+        self.functions = [convert_to_openai_function(f) for f in tools]
+        self.model = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0.5).bind(functions=self.functions)
         self.document_handler = document_handler
-        self.prompt_engine = prompt_engine or PromptEngine()
-        self.memory = SQLChatMessageHistory(session_id=os.getenv("SESSION_ID", "my_session"), connection_string=os.getenv("DB_CONNECTION_STRING", "sqlite:///lenox.db"))
+        self.prompt_engine = prompt_engine if prompt_engine else PromptEngine()
+        self.slack_service = SlackService()
 
-        self.teachability = Teachability(path_to_db_dir=os.getenv("TEACHABILITY_DB_DIR", "./tmp/teachable_agent_db"))
-        self.teachability.add_to_agent(self)
-
+        # Chat prompt template definition remains the same.
         self.prompt = ChatPromptTemplate.from_messages([
-            ("system", "Hello, I'm Lenox, your advanced AI assistant."),
+            ("system", "Hello, Volcano! I'm Lenox, your AI ally, not just in the cryptocurrency domain but also your companion for private and business life. Equipped with advanced NLP techniques, I can understand and engage in more nuanced conversations, making our interactions more dynamic and personalized."),
+            ("user", "Hi Lenox! I'm looking forward to our journey together."),
             MessagesPlaceholder(variable_name="chat_history"),
+            ("system", "Just so you know, I love learning new things and growing with you. Feel free to joke around or share how you feel!"),
             ("user", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad"),
         ])
 
-        # Registering functions from tools for dynamic invocation
-        self.tools = [convert_to_openai_function(f) for f in tools]
 
-        # Double-check if the tools are correctly formatted
-        assert all(isinstance(tool, Tool) for tool in self.tools), "All tools should be instances of langchain Tool class."
+        # Instead of using RunnableWithMessageHistory directly, we maintain the previous chain structure.
+        self.chain = RunnablePassthrough.assign(
+            agent_scratchpad=lambda x: format_to_openai_functions(x.get("intermediate_steps", []))
+        ) | self.prompt | self.model | OpenAIFunctionsAgentOutputParser()
 
-        # Initialize AgentExecutor after all other setup is complete
-        # Ensure that 'agent' is recognized as a valid agent by AgentExecutor
-        self.agent_executor = AgentExecutor(agent=self, tools=self.tools, verbose=True)
+        # Agent executor initialization remains unchanged.
+        self.qa = AgentExecutor(agent=self.chain, tools=tools, verbose=False)
 
-        for tool in self.tools:
-            if hasattr(tool, "description"):
-                self.register_function(tool, caller=self, executor=self.agent_executor, name=tool.name, description=tool.description)
-            else:
-                self.logger.warning(f"Tool {tool.name} lacks a description and wasn't registered.")
+        # Memory management setup using SQLAlchemy for conversation history.
+        self.memory = SQLChatMessageHistory(session_id="my_session", connection_string="sqlite:///lenox.db")
 
-    def convchain(self, query: str, session_id: str = "my_session") -> dict:
+
+    def convchain(self, query, session_id, channel_id=None):
+        logging.debug(f"Received query: {query}")
         if not query:
             return {"type": "text", "content": "Please enter a query."}
 
+        # Update the session ID and add the new message using the correct method.
         self.memory.session_id = session_id
-        self.memory.add_message(HumanMessage(content=query, sender="user"))
+        self.memory.add_message(HumanMessage(content=query, sender="user"))  # Use add_message here.
+        chat_history = self.memory.messages()
 
-        chat_history = self.memory.get_trimmed_messages(limit=15)
-        self.process_query_with_teachability(query, chat_history)
-
-        response = self.agent_executor.invoke({"input": query, "chat_history": chat_history})
-
-        self.memory.add_message(AIMessage(content=response['output'], sender="system"))
-        return response
-
-    def process_query_with_teachability(self, query: str, chat_history: list):
-        self.teachability.process_last_received_message(query)
-        related_memos = self.teachability.get_related_memos(query, n_results=10, threshold=1.5)
-        if related_memos:
-            self.logger.info(f"Recalled information: {related_memos}")
-            chat_history.extend(related_memos)
-
-
-    def handle_query(self, query: str, chat_history: list, session_id: str) -> dict:
-        # Implement specific query handling logic here
-        # For demonstration, simply returning a placeholder response
-        return {"type": "text", "content": "Query handling logic goes here."}
-
+        # Execute the appropriate query handler leveraging LangChain's routing
+        handler = self.determine_query_handler(query)
+        return handler(query, chat_history, session_id, channel_id)
 
     def determine_query_handler(self, query: str):
         if self.is_visualization_query(query):
@@ -102,6 +73,14 @@ class Lenox(ConversableAgent):
             return self.handle_document_query
         else:
             return self.handle_general_query
+        
+        
+    def fetch_and_process_slack_messages(self, channel_id):
+        messages = self.slack_service.fetch_channel_messages(channel_id)
+        return self.process_messages(messages)
+
+    def process_messages(self, messages):
+        return [{"content": msg.get("text", "")} for msg in messages]
 
     def handle_visualization_query(self, query, chat_history, session_id):
         data = self.fetch_data_for_visualization(query)
@@ -141,33 +120,26 @@ class Lenox(ConversableAgent):
             if not isinstance(content, str):
                 content = str(content)
         return {"type": response_type, "content": content}
+    
+    
+    def handle_general_query(self, query: str, chat_history: List[Dict[str, Any]], session_id: str, channel_id: str) -> dict:
+        slack_context = self.fetch_and_process_slack_messages(channel_id)
+        combined_context_messages = self.aggregate_context(chat_history) + slack_context
+        prompt_text = self.prompt_engine.generate_dynamic_prompt(query, [msg['content'] for msg in combined_context_messages])
 
-
-    def handle_general_query(self, query: str, chat_history: List[Dict[str, Any]], session_id: str) -> dict:
-        # Enhanced context aggregation to provide better input for the model
-        # Adjusted to access the 'content' attribute directly
-        context_messages = [msg.content for msg in self.aggregate_context(chat_history)]
-        prompt_text = self.prompt_engine.generate_dynamic_prompt(query, context_messages)
-
-        result = self.qa.invoke(
-            {"input": prompt_text, "chat_history": chat_history},
-            config={"configurable": {"session_id": session_id}}
-        )
+        result = self.qa.invoke({"input": prompt_text, "chat_history": combined_context_messages}, config={"configurable": {"session_id": session_id}})
         output = result.get('output', "Error processing the request.")
         if isinstance(output, str):
             self.memory.add_message(AIMessage(content=output, sender="system", session_id=session_id))
+            return {"type": "text", "content": output}
         else:
             logging.error(f"Expected 'output' to be a string, got {type(output)}")
             return {"type": "error", "content": "Error processing the request."}
-        return {"type": "text", "content": output}
-    
-    
+        
     def aggregate_context(self, chat_history: List[Dict[str, Any]]) -> List[Dict[str, str]]:
         # Aggregate recent messages to provide a rich context for the model
         # You can customize the number of messages to include based on your model's capacity and your use case
-        return chat_history[-7:]
-
-    
+        return chat_history[-5:]
 
     def create_prompt(self, context_messages: List[Dict[str, str]], user_query: str) -> str:
         # Construct a prompt with the aggregated context and the current user query
@@ -195,14 +167,9 @@ class Lenox(ConversableAgent):
         return data
     
     def handle_document_query(self, query, chat_history, session_id):
-        doc_response = self.document_handler.query(query)
-        if doc_response:
-            # Tailor the response based on the content found
-            response = f"I found something that might be helpful: '{doc_response}'"
-        else:
-            # Provide a helpful response when no relevant information is found
-            response = "I couldn't find anything specific in the documents. Can I help with something else?"
-        
+        response = self.document_handler.query(query)
+        if not isinstance(response, str):
+            logging.error(f"Expected 'response' to be a string, got {type(response)}")
+            return {"type": "error", "content": "Error processing the document query."}
         self.memory.add_message(AIMessage(content=response, sender="system", session_id=session_id))
         return {"type": "text", "content": response}
-
