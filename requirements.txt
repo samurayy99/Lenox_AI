@@ -23,3 +23,7 @@ cachetools
 tiktoken
 werkzeug
 llama-index-embeddings-langchain
+slack_bolt
+termcolor
+watchdog
+pyperclip
