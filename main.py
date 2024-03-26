@@ -6,11 +6,6 @@ import logging
 from logging.handlers import RotatingFileHandler
 from documents import DocumentHandler, allowed_file
 from utils import Lenox
-from slack_service import SlackService
-from langchain_community.agent_toolkits import SlackToolkit
-from langchain import hub
-from langchain.agents import AgentExecutor, create_openai_tools_agent
-from langchain_openai import ChatOpenAI
 
 
 
@@ -25,23 +20,13 @@ from youtube_tools import search_youtube, process_youtube_video, query_youtube_v
 from etherscan_tools import get_whale_insights, get_recent_blocks, get_block_transactions
 from coinpaprika_tools import get_global_market_overview, get_coin_social_media_and_dev_activity, get_exchange_info
 
-# Initialize the LLM and agent
-llm = ChatOpenAI(temperature=0, model="gpt-4")
-prompt = hub.pull("hwchase17/openai-tools-agent")
-agent = create_openai_tools_agent(
-    tools=toolkit.get_tools(),
-    llm=llm,
-    prompt=prompt,
-)
-agent_executor = AgentExecutor(agent=agent, tools=toolkit.get_tools(), verbose=True)
+
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
-slack_service = SlackService()
-toolkit = SlackToolkit()
 
 # Configure structured logging
 handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=1)
@@ -52,8 +37,6 @@ app.logger.info('Flask application started')
 
 # Initialize DocumentHandler with correct paths
 document_handler = DocumentHandler(document_folder="documents", data_folder="data")
-
-
 
 
 # Initialize Lenox with a broader range of tools and the DocumentHandler
@@ -80,37 +63,11 @@ def index():
 def handle_query():
     data = request.get_json()
     query = data.get('query', '')
-    session_id = data.get('session_id', os.urandom(16).hex())
-    channel_id = data.get('channel_id', None)  # Extract channel_id from the request data, default to None if not provided
-
+    session_id = data.get('session_id', 'default_session')  # Sie möchten die Session-ID möglicherweise dynamischer handhaben
     if not query:
-        return jsonify({'error': 'Empty request.'}), 400
-
-    # Pass channel_id to the convchain method
-    response = lenox.convchain(query, session_id, channel_id)
+        return jsonify({'error': 'Leere Anfrage.'}), 400
+    response = lenox.convchain(query, session_id)
     return jsonify(response)
-
-
-@app.route('/slack_interaction', methods=['POST'])
-def slack_interaction():
-    data = request.get_json()
-    input_text = data.get("input")
-    response = agent_executor.invoke({"input": input_text})
-    return jsonify(response)
-
-
-@app.route('/fetch_slack_messages', methods=['POST'])
-def fetch_slack_messages():
-    data = request.get_json()
-    channel_id = data.get('channel_id')
-    latest = data.get('latest', None)
-    oldest = data.get('oldest', None)
-    limit = data.get('limit', 100)  # Default to 100 messages if not specified
-
-    messages = slack_service.fetch_channel_messages(channel_id, latest, oldest, limit)
-    return jsonify({"success": True, "messages": messages})
-
-
 
 @app.route('/upload', methods=['POST'])
 def upload_document():
@@ -139,6 +96,4 @@ def handle_404_error(error):
     return jsonify({'error': 'Ressource nicht gefunden.'}), 404
 
 if __name__ == '__main__':
-    # Ensure FLASK_DEBUG environment variable is set to 'False' in production.
-    app.run(host='0.0.0.0', debug=os.getenv('FLASK_DEBUG', 'False').lower() == 'true')
-
+    app.run(host='0.0.0.0', debug=os.getenv('FLASK_DEBUG', 'False') == 'True')

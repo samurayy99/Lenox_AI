@@ -3,6 +3,7 @@ from collections import Counter
 from textblob import TextBlob
 from langchain.agents import tool  # Use the @tool decorator
 import os
+from typing import Any, Dict, List, Union
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -62,3 +63,28 @@ def find_trending_topics(subreddits: list, time_filter='day') -> str:
     most_common_topics = topics.most_common(10)
     topics_str = "\n".join([f"{topic[0]}: {topic[1]} mentions" for topic in most_common_topics])
     return f"Trending topics:\n{topics_str}"
+
+
+
+def get_sentiment_vader(text): 
+    analyzer = SentimentIntensityAnalyzer()
+    score = analyzer.polarity_scores(text)
+    return score['compound'] 
+
+def clean_reddit_text(docs: List[str]) -> List[str]:
+    """Cleans and prepares Reddit text for sentiment analysis"""
+    stop_words = set(stopwords.words('english'))
+    lemmatizer = WordNetLemmatizer()
+    translator = str.maketrans('', '', string.punctuation)
+
+    clean_docs = []
+    docs = [doc.lower().strip() for doc in docs]
+
+    for doc in docs:
+        tokens = doc.split()
+        clean_tok = [lemmatizer.lemmatize(token) for token in tokens]
+        clean_tok = [token for token in clean_tok if token not in stop_words]
+        clean_tok = [token.translate(translator) for token in clean_tok] 
+        filtered_tokens = [t for t in clean_tok if t]  
+        clean_docs.append(" ".join(filtered_tokens))
+    return clean_docs

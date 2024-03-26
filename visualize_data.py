@@ -4,6 +4,7 @@ import plotly
 from plotly.io import to_json
 import plotly.express as px
 import json
+import logging
 from dataclasses import dataclass, field
 from plotly.graph_objs import Figure
 
@@ -26,12 +27,30 @@ class VisualizationConfig:
             'box': px.box,  # Ein weiteres Beispiel
         }
         self.plotly_function = plot_functions.get(self.visualization_type, px.line)
-
-
+        
+        
 def create_visualization(config: VisualizationConfig):
-    df = pd.DataFrame(config.data)
-    if config.visualization_type == 'pie':
-        fig = config.plotly_function(df, values='y', names='x', **config.additional_kwargs)
-    else:
-        fig = config.plotly_function(df, x='x', y='y', **config.additional_kwargs)
-    return fig
+    cleaned_data = {}
+    for key, values in config.data.items():
+        # Check if all values are either int or float, convert to float
+        if all(isinstance(v, (int, float)) for v in values):
+            cleaned_data[key] = [float(v) for v in values]
+        # If values are mixed or non-numeric, keep as is but log a warning
+        else:
+            logging.warning(f"Non-numeric data found in column '{key}': {values}")
+            cleaned_data[key] = values
+    
+    # Assuming 'x' and 'y' are the only columns needed for the visualization
+    df = pd.DataFrame(cleaned_data)[['x', 'y']]
+    logging.info(f"DataFrame types:\n{df.dtypes}")  # Log DataFrame types for debugging
+
+    fig = config.plotly_function(df, **config.additional_kwargs)
+    fig.update_layout(title=config.title)
+    if 'x_label' in config.additional_kwargs:
+        fig.update_xaxes(title_text=config.additional_kwargs['x_label'])
+    if 'y_label' in config.additional_kwargs:
+        fig.update_yaxes(title_text=config.additional_kwargs['y_label'])
+
+    return fig    
+        
+        
