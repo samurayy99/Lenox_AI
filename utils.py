@@ -17,8 +17,6 @@ from langchain.agents.format_scratchpad import format_to_openai_functions
 from lenox_memory import SQLChatMessageHistory
 from documents import DocumentHandler
 from prompts import PromptEngine
-from slack_service import SlackService
-
 
 class Lenox:
     def __init__(self, tools, document_handler: DocumentHandler, prompt_engine: PromptEngine = None):
@@ -27,7 +25,6 @@ class Lenox:
         self.model = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0.5).bind(functions=self.functions)
         self.document_handler = document_handler
         self.prompt_engine = prompt_engine if prompt_engine else PromptEngine()
-        self.slack_service = SlackService()
 
         # Chat prompt template definition remains the same.
         self.prompt = ChatPromptTemplate.from_messages([
@@ -52,7 +49,7 @@ class Lenox:
         self.memory = SQLChatMessageHistory(session_id="my_session", connection_string="sqlite:///lenox.db")
 
 
-    def convchain(self, query, session_id, channel_id=None):
+    def convchain(self, query: str, session_id: str = "my_session") -> dict:
         logging.debug(f"Received query: {query}")
         if not query:
             return {"type": "text", "content": "Please enter a query."}
@@ -64,7 +61,7 @@ class Lenox:
 
         # Execute the appropriate query handler leveraging LangChain's routing
         handler = self.determine_query_handler(query)
-        return handler(query, chat_history, session_id, channel_id)
+        return handler(query, chat_history, session_id)
 
     def determine_query_handler(self, query: str):
         if self.is_visualization_query(query):
@@ -75,26 +72,6 @@ class Lenox:
             return self.handle_general_query
         
         
-    def fetch_and_process_slack_messages(self, channel_id):
-        messages = self.slack_service.fetch_channel_messages(channel_id)
-        return self.process_messages(messages)
-
-    def process_messages(self, messages):
-        return [{"content": msg.get("text", "")} for msg in messages]
-
-    def handle_visualization_query(self, query, chat_history, session_id):
-        data = self.fetch_data_for_visualization(query)
-        visualization_type = self.parse_visualization_type(query)
-        visualization_config = VisualizationConfig(data=data, visualization_type=visualization_type)
-        visualization_content_str = create_visualization(visualization_config)
-
-        response = self.create_response(visualization_content_str, response_type="visual")
-        if 'content' in response and isinstance(response['content'], str):
-            self.memory.add_message(AIMessage(content=response['content'], sender="system", session_id=session_id))
-        else:
-            logging.error("Visualization response content is not a string.")
-            return {"type": "error", "content": "Error processing the visualization."}
-        return response
 
     def create_response(self, content, response_type="text") -> dict:
         logging.debug(f"Creating response: {content}, Type: {response_type}")
@@ -120,22 +97,27 @@ class Lenox:
             if not isinstance(content, str):
                 content = str(content)
         return {"type": response_type, "content": content}
-    
-    
-    def handle_general_query(self, query: str, chat_history: List[Dict[str, Any]], session_id: str, channel_id: str) -> dict:
-        slack_context = self.fetch_and_process_slack_messages(channel_id)
-        combined_context_messages = self.aggregate_context(chat_history) + slack_context
-        prompt_text = self.prompt_engine.generate_dynamic_prompt(query, [msg['content'] for msg in combined_context_messages])
 
-        result = self.qa.invoke({"input": prompt_text, "chat_history": combined_context_messages}, config={"configurable": {"session_id": session_id}})
+
+    def handle_general_query(self, query: str, chat_history: List[Dict[str, Any]], session_id: str) -> dict:
+        # Enhanced context aggregation to provide better input for the model
+        # Adjusted to access the 'content' attribute directly
+        context_messages = [msg.content for msg in self.aggregate_context(chat_history)]
+        prompt_text = self.prompt_engine.generate_dynamic_prompt(query, context_messages)
+
+        result = self.qa.invoke(
+            {"input": prompt_text, "chat_history": chat_history},
+            config={"configurable": {"session_id": session_id}}
+        )
         output = result.get('output', "Error processing the request.")
         if isinstance(output, str):
             self.memory.add_message(AIMessage(content=output, sender="system", session_id=session_id))
-            return {"type": "text", "content": output}
         else:
             logging.error(f"Expected 'output' to be a string, got {type(output)}")
             return {"type": "error", "content": "Error processing the request."}
-        
+        return {"type": "text", "content": output}
+    
+    
     def aggregate_context(self, chat_history: List[Dict[str, Any]]) -> List[Dict[str, str]]:
         # Aggregate recent messages to provide a rich context for the model
         # You can customize the number of messages to include based on your model's capacity and your use case
@@ -145,8 +127,62 @@ class Lenox:
         # Construct a prompt with the aggregated context and the current user query
         context = " ".join([msg.content for msg in context_messages])
         return f"{context} {user_query}"
+    
+    def handle_document_query(self, query, chat_history, session_id):
+        response = self.document_handler.query(query)
+        if not isinstance(response, str):
+            logging.error(f"Expected 'response' to be a string, got {type(response)}")
+            return {"type": "error", "content": "Error processing the document query."}
+        self.memory.add_message(AIMessage(content=response, sender="system", session_id=session_id))
+        return {"type": "text", "content": response}
+    
+    
+    def handle_reddit_query(self, query, chat_history, session_id):
+        if "sentiment" in query:
+            subreddit, keyword = self.extract_reddit_params(query)  # You'll need a helper function for this
+            sentiment = analyze_sentiment(subreddit, keyword) 
+            return {"type": "text", "content": sentiment}
+        elif "trending" in query:
+            subreddit = self.extract_reddit_params(query) 
+            trends = find_trending_topics([subreddit])  # Assuming subreddits are always in a list
+            return {"type": "text", "content": trends}
+        else:
+            # Handle other Reddit query types...
+            parse
+    
+    
+    def handle_visualization_query(self, query, chat_history, session_id):
+        data = self.fetch_data_for_visualization(query)
+        visualization_type = self.parse_visualization_type(query)
+        title = self.parse_title_from_query(query)
+        additional_kwargs = self.parse_additional_kwargs(query)
 
-        
+        visualization_config = VisualizationConfig(
+            data=data, 
+            visualization_type=visualization_type, 
+            title=title, 
+            additional_kwargs=additional_kwargs
+        )
+        visualization_content_str = create_visualization(visualization_config)
+
+        response = self.create_response(visualization_content_str, response_type="visual")
+        # ... rest of your handling logic... 
+
+    def parse_title_from_query(self, query):
+        if "title:" in query:
+            return query.split("title:")[1].strip()
+        else:
+            return "My Visualization"  # Default title
+
+    def parse_additional_kwargs(self, query):
+        kwargs = {}
+        if "x label:" in query:
+            kwargs['x_label'] = query.split("x label:")[1].strip()
+        if "y label:" in query:
+            kwargs['y_label'] = query.split("y label:")[1].strip()
+        return kwargs
+    
+    
     def is_visualization_query(self, query: str) -> bool:
         visualization_keywords = ["visualize", "graph", "chart", "plot", "show me a graph of", "display data"]
         return any(keyword in query.lower() for keyword in visualization_keywords)
@@ -165,11 +201,5 @@ class Lenox:
         else:
             data = {'x': [1, 2, 3, 4], 'y': [10, 11, 12, 13], 'type': 'scatter'}
         return data
+
     
-    def handle_document_query(self, query, chat_history, session_id):
-        response = self.document_handler.query(query)
-        if not isinstance(response, str):
-            logging.error(f"Expected 'response' to be a string, got {type(response)}")
-            return {"type": "error", "content": "Error processing the document query."}
-        self.memory.add_message(AIMessage(content=response, sender="system", session_id=session_id))
-        return {"type": "text", "content": response}

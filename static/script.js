@@ -36,15 +36,23 @@ async function submitQuery() {
             throw new Error(`Network response was not OK. Status: ${response.status}`);
         }
 
-        const data = await response.json();
-        processResponseData(data);
+        // Check if the response body is empty
+        const text = await response.text(); // Read response body as text
+        const data = text ? JSON.parse(text) : null; // Parse text as JSON if not empty
+
+        if (data) {
+            processResponseData(data);
+        } else {
+            console.error('Received null or undefined data');
+            appendMessage('Ein Fehler ist aufgetreten. Keine Daten empfangen.', 'error-message');
+        }
     } catch (error) {
         console.error('Error fetching response:', error);
         appendMessage('Ein Fehler ist aufgetreten.', 'error-message');
     } finally {
         showLoadingIndicator(false);
     }
-} // Corrected by adding the missing closing brace
+}
 
 let visualizationCount = 0; // Global counter for visualization elements
 
@@ -170,22 +178,39 @@ async function handleComplexQuery(query) {
 
 
 function processResponseData(data) {
-    if (data.type === 'visual') {
+    // Check if data is null or undefined before attempting to access its properties
+    if (!data) {
+        console.error('Received null or undefined data');
+        appendMessage('Ein Fehler ist aufgetreten. Keine Daten empfangen.', 'error-message');
+        return;
+    }
+
+    // Use optional chaining to safely access the type property
+    const responseType = data?.type;
+
+    if (responseType === 'visual') {
         const visualizationContainer = appendVisualizationPlaceholder(); // Erstelle und erhalte den neuen Platzhalter
         if (visualizationContainer) {
             try {
+                // Ensure data.content exists before attempting to parse it
+                if (!data.content) {
+                    throw new Error('Visualization data content is missing');
+                }
                 const visualizationData = JSON.parse(data.content);
                 Plotly.react(visualizationContainer, visualizationData.data, visualizationData.layout);
             } catch (e) {
                 console.error('Error parsing visualization data:', e);
+                appendMessage('Ein Fehler ist bei der Verarbeitung der Visualisierungsdaten aufgetreten.', 'error-message');
             }
         } else {
             console.error('Visualization container not found');
+            appendMessage('Visualisierungscontainer nicht gefunden.', 'error-message');
         }
-    } else if (data.type === 'text') {
+    } else if (responseType === 'text') {
         appendMessage(data.content, 'bot-message');
     } else {
-        console.error('Unexpected response type:', data.type);
+        console.error('Unexpected response type:', responseType);
+        appendMessage('Unerwarteter Antworttyp.', 'error-message');
     }
 }
 

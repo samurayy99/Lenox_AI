@@ -1,0 +1,120 @@
+Exception on /query [POST]
+Traceback (most recent call last):
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 1463, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 872, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask_cors/extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 870, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 855, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/main.py", line 69, in handle_query
+    response = lenox.convchain(query, session_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 63, in convchain
+    return handler(query, chat_history, session_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 165, in handle_visualization_query
+    visualization_content_str = create_visualization(visualization_config)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/visualize_data.py", line 33, in create_visualization
+    fig = config.plotly_function(df, **config.additional_kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/plotly/express/_chart_types.py", line 264, in line
+    return make_figure(args=locals(), constructor=go.Scatter)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/plotly/express/_core.py", line 2090, in make_figure
+    args = build_dataframe(args, constructor)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/plotly/express/_core.py", line 1539, in build_dataframe
+    raise ValueError(
+ValueError: Plotly Express cannot process wide-form data with columns of different type.
+Interner Serverfehler: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.
+Flask application started
+Exception on /query [POST]
+Traceback (most recent call last):
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 1463, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 872, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask_cors/extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 870, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 855, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/main.py", line 69, in handle_query
+    response = lenox.convchain(query, session_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 63, in convchain
+    return handler(query, chat_history, session_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 165, in handle_visualization_query
+    visualization_content_str = create_visualization(visualization_config)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/visualize_data.py", line 41, in create_visualization
+    fig = config.plotly_function(df, **config.additional_kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/plotly/express/_chart_types.py", line 264, in line
+    return make_figure(args=locals(), constructor=go.Scatter)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/plotly/express/_core.py", line 2090, in make_figure
+    args = build_dataframe(args, constructor)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/plotly/express/_core.py", line 1539, in build_dataframe
+    raise ValueError(
+ValueError: Plotly Express cannot process wide-form data with columns of different type.
+Interner Serverfehler: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.
+Flask application started
+Exception on /query [POST]
+Traceback (most recent call last):
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 1463, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 872, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask_cors/extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 870, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/flask/app.py", line 855, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/main.py", line 69, in handle_query
+    response = lenox.convchain(query, session_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 64, in convchain
+    return handler(query, chat_history, session_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 166, in handle_visualization_query
+    visualization_content_str = create_visualization(visualization_config)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/visualize_data.py", line 41, in create_visualization
+    fig = config.plotly_function(df, **config.additional_kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/plotly/express/_chart_types.py", line 264, in line
+    return make_figure(args=locals(), constructor=go.Scatter)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/plotly/express/_core.py", line 2090, in make_figure
+    args = build_dataframe(args, constructor)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/.pyenv/versions/3.11.6/lib/python3.11/site-packages/plotly/express/_core.py", line 1539, in build_dataframe
+    raise ValueError(
+ValueError: Plotly Express cannot process wide-form data with columns of different type.
+Interner Serverfehler: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.
+Flask application started
