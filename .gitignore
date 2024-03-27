@@ -10,3 +10,5 @@ documents/
 tmp/
 lenox.db
 requirements.txt
+Dockerfile
+docker-compose.yml
