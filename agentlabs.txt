@@ -1,0 +1,598 @@
+AGENTLABS FRONTEND DOCS
+
+What is AgentLabs?
+Frontend as a service for building chat-based AI Agents.
+AgentLabs is an open-source platform to create rich chat-based AI Assistant applications in minutes.
+AgentLabs.dev frontend can be controlled using our Node and Python SDKs and allows you to stream content in real time between your users and your backend.
+The solution provides:
+👨‍🔬 User management and Authentication
+💬 Full-featured Chat as a service 
+👨‍💻 Support for Markdown, Images, and File Transfer
+🎆 Asynchronous and real-time streaming SDKs
+🅱️ Backend Agnostic: you can use AgentLabs with any backend framework or tool
+
+
+Before we start
+What you must know before using our recipes
+This section shows you many examples of what you can build with AgentLabs.
+These examples will focus on the code you have to write using the SDK, but they assume you already know how to access your admin dashboard and configure a project using the admin wizard.
+As a quick reminder, here are the steps you have to follow to setup your admin dashboard (at least for the cloud version).
+Login to the admin console
+Create a project and follow the wizard
+Create your first agent
+You're all set!
+
+
+Get Started with AgentLabs
+Self Hosting & Cloud Version
+Depending on your need, AgentLabs provides a self-hostable and cloud version.
+Cloud version
+The cloud version is the most convenient way to start using AgentLabs. 
+You only have to register and follow the wizard to configure your account without worrying about infrastructure management.
+Keep in mind that AgentLabs is still in Alpha, so the cloud version is probably convenient especially if you don't want to update it every week. 😄
+Self-hosted version
+The cloud version of the plugin uses exactly the same version as the self-hosted one.
+It means you can choose to self-host AgentLabs on your own infra and keep the exact same feature set.
+At this moment, we only support docker-compose to run it at a small scale.
+However, we'll support helm-chart for Kubernetes as soon as we roll out the beta version.
+Which one should I choose?
+At the moment, choosing the Cloud Version is probably the safest solution unless you have some very specific infrastructure or security constraints.
+
+
+Pricing
+Free self-hosted version and freemium cloud version
+Agentlabs is currently in alpha and free to use for everyone.
+We're going to offer both free and premium tiers in the future for our cloud version.
+Our self-hosted version will remain free, and we'll provide optional enterprise-grade support for it.
+
+
+Installation
+Installing the Python or Node SDK
+You can use both our Python or NodeJS SDK based on your preferences.
+Our SDK will help you to stream content from your backend to the CharUI.
+Python
+Nodejs
+Using pip
+Copy
+pip install agentlabs-sdk
+Or using poetry
+Copy
+poetry add agentlabs-sdk
+
+
+Secret Key
+How to get your API / Secret Key
+You can generate the secret key from your admin console.
+After you create your first project, open the Secrets section and click on Generate secret.
+For some security reasons, your secret key will never be shown twice. Keep it secure.
+
+
+Using the SDK
+Getting started with our SDK
+Basic example
+Since we provide the entire UI and streaming for you, you only have to listen for messages from the front end and send messages from your backend.
+
+Here's a dead simple example of a ping-pong app. Indeed, you can make much more complex applications with multiple agents streaming in real time.
+Typescript
+Python
+Copy
+import { Project } from 'agentlabs-sdk';
+
+const project = new Project({
+    projectId: 'you-project-id',
+    secret: 'your-secret',
+    url: 'provided-in-your-console'
+});
+
+const agent = project.agent('agent-id');
+
+project.onChatMessage((message) => {
+  if (message.text === 'ping') {
+     agent.send({
+        conversationId: message.conversationId,
+        text: 'pong'
+     })
+  } else {
+     agent.send({
+        conversationId: message.conversationId,
+        text: 'I do not understand'
+     })
+  }
+});
+
+project.connect()
+
+
+Frontend as a service
+Here is why AgentLabs is a frontend as a service
+Why we're building this
+As a developer, every time you start a new project (especially a chat-based UI) you have to handle many boring things frontend-wise:
+😑 Authentication
+😑 User management
+😑 Real-time streaming and Async I/O management
+😑 Analytics
+😑 Payment
+😑 And even more...
+All these problems take a long time to solve, especially if you want to create a product that scales.
+However, as an AI Agent developer, you must have enough things on your plate already.
+AgentLabs aims to provide a built-in solution that covers all the above points without writing any single front-end code.
+What is it?
+It's simple: we provide everything that is frontend-related and we give you the possibility to control it via our backend SDK.
+Everything you can see in the following video is provided by AgentLabs and requires 0 lines of code.
+This includes:
+✅The authentication portal
+✅The conversation chat UI
+✅The realtime connection
+✅Even the dark and light theme 😄
+
+
+User Authentication
+What you must know about authentication
+As we said previously, AgentLabs allows you to manage and authenticate your users.
+Authentication methods
+AgentLabs lets you configure the authentication methods you want to register and sign in your users.
+You can configure basic email methods and different oauth2 providers.
+The methods you configure will be available to your users.
+You can configure them from your admin console.
+
+Configuring authentication methods
+The current auth methods set is limited but we'll rollout more methods as we go 🚀
+Authentication request 
+Once you've configured your auth methods, you can request authentication from your users simply using our SDK.
+Python
+TypeScript
+Copy
+agent.request_login(
+   conversation_id="your-conversation",
+   text="Please login to access this feature"
+)
+
+The snippet above will trigger the following in-chat authentication component.
+
+Asking for in-chat authentication
+Managing your users
+Then, you can manage all your application users from your admin console.
+
+
+Project
+What you have to know about a project
+During the onboarding, the first thing we ask you to do is to create a Project.
+You can think of a project as a Tenant or as an Application you want to build.
+Project slug and domain
+When you create a project, AgentLabs attributes it a slug which is a unique identifier but also a subdomain where your frontend application will be available to your users.
+Let's say your project slug is gpt-chat, then your application will be available at https://gpt-chat.agentlabs.dev , and your users will be able to register and use your Chat UI there.
+
+
+
+ChatGPT with LangChain
+You can retrieve the full example of this recipe here
+What we're going to cook
+In this recipe, we will build a simple version of ChatGPT using the LangChain framework and their ChatOpenAI model.
+To keep it simple, we won't add memory to this Chat Model. However, you will be able to find a full example with a basic memory in our examples repository.
+Here's the final result:
+
+Final result of what you're going to build
+Let's code
+Init AgentLabs
+First, we'll init the AgentLabs SDK, our agent and to open the connection with the server.
+Python
+Copy
+from agentlabs.agent import Agent
+from agentlabs.chat import IncomingChatMessage, MessageFormat
+from agentlabs.project import Project
+
+if __name__ == "__main__":
+    env = parse_env_or_raise()
+    project = Project(
+            project_id=env.project_id,
+            agentlabs_url=env.agentlabs_url,
+            secret=env.secret,
+    )
+
+    agent = project.agent(id=env.agent_id)
+
+    project.connect()
+    project.wait()
+Looking at the full example, you will see we created a parse_env_or_raise() method. But you can handle the configuration variable the way you want.
+Don't forget your OPENAI_API_KEY environment variable if you want everything to work.
+Prepare LangChain
+Then, we'll init LangChain and the ChatOpenAI model.
+
+Let's import every dependency we need:
+Python
+Copy
+from langchain.callbacks.base import BaseCallbackHandler
+from langchain.chat_models import ChatOpenAI
+from langchain.schema.messages import BaseMessage, HumanMessage, SystemMessage
+from langchain.schema.output import LLMResult
+Now we have imported our dependencies, let's init our model by adding the following line.
+Python
+Copy
+llm = ChatOpenAI(streaming=True)
+Setting streaming to True allows us to get fragments of the response as they arrive and not wait for the entire response to be available. You can find more info about streaming in the LangChain docs.
+Now, we'll create a class that extends the BaseCallbackHandler of LangChain to handle the stream fragments as they arrive.
+What we want is to process every incoming stream and forward it to the client.
+Python
+Copy
+class AgentLabsStreamingCallback(BaseCallbackHandler):
+    def __init__(self, agent: Agent, conversation_id: str):
+        super().__init__()
+        self.agent = agent
+        self.conversation_id = conversation_id
+
+    def on_llm_start(
+        self, serialized: Dict[str, Any], prompts: List[str], **kwargs: Any
+    ) -> Any:
+        self.stream = self.agent.create_stream(format=MessageFormat.MARKDOWN, conversation_id=self.conversation_id)
+
+    def on_llm_new_token(self, token: str, **kwargs: Any) -> Any:
+        self.stream.write(token)
+
+    def on_llm_end(self, response: LLMResult, **kwargs: Any) -> Any:
+        self.stream.end();
+This handler is pretty straightforward:
+On LLM start, we create a stream for our agent
+When we receive a token, we stream it using our agent
+On LLM end, we close the stream for our agent
+Handle incoming messages
+We're mostly done! We initiated AgentLabs and configured LangChain, now we need to handle the incoming messages.
+To do so, we'll use the on_chat_message method provided by AgentLabs.
+Python
+Copy
+if __name__ == "__main__":
+    env = parse_env_or_raise()
+
+    project = Project(
+            project_id=env.project_id,
+            agentlabs_url=env.agentlabs_url,
+            secret=env.secret,
+    )
+
+    llm = ChatOpenAI(streaming=True)
+
+    agent = project.agent(id=env.agent_id)
+    project.on_chat_message(handle_task) # ADDED THIS LINE
+
+    project.connect()
+    project.wait()
+This method takes a handler function as an argument. Let's define it.
+Python
+Copy
+def handle_task(message: IncomingChatMessage):
+    print(f"Handling message: {message.text} sent by {message.member_id}")
+    messages: List[BaseMessage] = [
+            SystemMessage(content="You are a general assistant designed to help people with their daily tasks. You should format your answers in markdown format as you see fit."),
+            HumanMessage(content=message.text)
+    ]
+    callback = AgentLabsStreamingCallback(agent=agent, conversation_id=message.conversation_id)
+    llm(messages, callbacks=[callback])
+In this function, we handle the incoming message from the user and them we pass it to the LLM.
+We also pass it a first message to give it some context so it knows how to handle the user's input.
+As a second argument, you can see we give it an instance of our callback class that we previously created.
+Now, every time a user sends a message, the LLM will receive it, and we'll stream the LLM responses back to the user.
+Et voilà 🎉
+Congrats, you created your own version of ChatGPT! 
+
+Example file:
+```
+from typing import Any, Dict, List
+from agentlabs.agent import Agent
+from dotenv import load_dotenv
+import os
+from agentlabs.chat import IncomingChatMessage, MessageFormat
+from langchain.callbacks.base import BaseCallbackHandler
+from langchain.chat_models import ChatOpenAI
+from agentlabs.project import Project
+from langchain.schema.messages import BaseMessage, HumanMessage, SystemMessage
+from langchain.schema.output import LLMResult
+from pydantic.v1.dataclasses import dataclass
+
+@dataclass()
+class ParsedEnv:
+    project_id: str
+    agentlabs_url: str
+    secret: str
+    agent_id: str
+
+class AgentLabsStreamingCallback(BaseCallbackHandler):
+    def __init__(self, agent: Agent, conversation_id: str):
+        super().__init__()
+        self.agent = agent
+        self.conversation_id = conversation_id
+
+    def on_llm_start(
+        self, serialized: Dict[str, Any], prompts: List[str], **kwargs: Any
+    ) -> Any:
+        self.stream = self.agent.create_stream(format=MessageFormat.MARKDOWN, conversation_id=self.conversation_id)
+
+    def on_llm_new_token(self, token: str, **kwargs: Any) -> Any:
+        self.stream.write(token)
+
+    def on_llm_end(self, response: LLMResult, **kwargs: Any) -> Any:
+        self.stream.end();
+
+def parse_env_or_raise():
+    load_dotenv()
+
+    project_id = os.environ.get('AGENTLABS_PROJECT_ID')
+    if not project_id:
+        raise Exception("AGENTLABS_PROJECT_ID is not set")
+
+    agentlabs_url = os.environ.get('AGENTLABS_URL')
+    if not agentlabs_url:
+        raise Exception("AGENTLABS_URL is not set")
+
+    secret = os.environ.get('AGENTLABS_SECRET')
+    if not secret:
+        raise Exception("AGENTLABS_SECRET is not set")
+
+    agent_id = os.environ.get('AGENTLABS_AGENT_ID')
+    if not agent_id:
+        raise Exception("AGENTLABS_AGENT_ID is not set")
+
+    return ParsedEnv(
+            project_id=project_id,
+            agentlabs_url=agentlabs_url,
+            secret=secret,
+            agent_id=agent_id,
+    )
+
+def handle_task(message: IncomingChatMessage):
+    print(f"Handling message: {message.text} sent by {message.member_id}")
+    messages: List[BaseMessage] = [
+            SystemMessage(content="You are a general assistant designed to help people with their daily tasks. You should format your answers in markdown format as you see fit."),
+            HumanMessage(content=message.text)
+    ]
+    callback = AgentLabsStreamingCallback(agent=agent, conversation_id=message.conversation_id)
+    llm(messages, callbacks=[callback])
+
+if __name__ == "__main__":
+    env = parse_env_or_raise()
+
+    project = Project(
+            project_id=env.project_id,
+            agentlabs_url=env.agentlabs_url,
+            secret=env.secret,
+    )
+
+    llm = ChatOpenAI(streaming=True)
+
+    agent = project.agent(id=env.agent_id)
+    project.on_chat_message(handle_task)
+
+    project.connect()
+    project.wait()
+``
+
+
+Before we start
+What you must know before using our recipes
+This section shows you many examples of what you can build with AgentLabs.
+These examples will focus on the code you have to write using the SDK, but they assume you already know how to access your admin dashboard and configure a project using the admin wizard.
+As a quick reminder, here are the steps you have to follow to setup your admin dashboard (at least for the cloud version).
+Login to the admin console
+Create a project and follow the wizard
+Create your first agent
+You're all set!
+
+
+Agents
+Your project can contain one or many agents.
+An agent is simply an entity that allows you to communicate with a user through a Conversation in the Chat UI.
+When a user starts a new conversation, all available agents of your project will be able to handle and send messages to the user through our SDK.
+UI-wise, a good way to think about an agent is to imagine them as the Sender of a message. Every agent can programmatically send a message from your backend using our SDK.
+
+
+Messages Format
+About markdown and PlainText
+Plain text
+By default when you send a message using the SDK, the UI shows it in plain text.
+Plain text messages are great for chatting or sending messages that don't contain formatting to the user.
+
+Plain text response example
+Sending plain text is the default behavior of the SDK, so you just have to run the following code:
+Python
+TypeScript
+Copy
+agent.send({
+    conversation_id: 'your-conversation-id',
+    text: 'Your plain text value',
+});
+Markdown
+Often, you may want your agent to return more than just a simple text. In that situation, you most likely want to use the markdown format.
+Markdown is great for applying some styling, or to display a link, generating a table, displaying code snippet , images, and more.
+You can see a full markdown cheatsheet here.
+
+Example of a message containing markdown
+Send indicate the interpreter you are sending text in Markdown, you just have to use the MARKDOWN format option.
+Python
+TypeScript
+Copy
+from agentlabs.chat importMessageFormat
+
+agent.send(
+  text="**My Text**",
+  format=MessageFormat.MARKDOWN,
+  conversation_id=self.conversation_id,
+
+
+One-off vs Stream
+One-off messages
+A one-off message is a standard message that you can send entirely as you would do when you're chatting with a friend and hit send .
+The entire message will be sent at once.
+One-off messages are great for small content that you know in advance.3
+For example, in our Ping-Pong recipe, we answer "pong" using a one-off message every time the user says "ping".
+Streamed messages
+Streamed messages are different from one-off messages. 
+When you send a streamed message, the user immediately sees a message box popping up.
+However, every time you send a new stream on the same channel, it will aggregate to the same message box.
+You can think of them as having this "typewriter" look and feel as you could have for example in ChatGPT.
+Sending a stream works in 3 steps:
+🔵 Open a stream channel using the createStream() method
+Copy
+const channel = agent.createStream(conversationId)
+Note that starting from v0.0.51 openeing a stream triggers an event that will displays a smooth animation in the frontend (see Typewriter animation)
+🔵 Write content to the stream as many times as you want
+Copy
+channel.write("this")
+channel.write("is")
+channel.write("a")
+channel.write("streamed")
+channel.write("message")
+🔵 When you're done, close the channel
+Copy
+channel.streamEnd()
+Et voilà 🎉
+
+
+Here's an example of how a streamed response looks
+
+Example streamed message with code execution
+Which one to choose?
+It's pretty rare to hesitate between both, but if you're in that situation, here's a quick recap that might help.
+Solution	Info	Warning
+One-off
+✅ great when you know the content of the message upfront
+✅ suited when you need to inform the user quickly about something
+❌Generally not suited to send multiple messages in a row
+Stream
+✅ feel more natural / human-friendly
+✅ suited for long-running tasks in the background
+❌Be careful with very very long answers because it can become borring for the user to wait, especially if you know the whole response upfront.
+Indeed, you have to test each solution on your own to make sure you decide which one is best suited to your specific use case. In general, you want to use a mix of both in your application anyway.
+
+
+Typewriter animation
+How animate your messages properly with Typewrite
+We explained in the previous section that you can use either the send method (for one-off messages) or the write method (for sending streams).
+But sometimes, you want to send some one-off messages that look like streams.
+Since v0.0.51 the Node and Python SDKs provide a typewrite() method that allows you to simulate a stream with a smooth animation, even if you know the content in advance.
+
+Showcasing typewriter animation using typewrite()
+The full code of this video is available here.
+How it works?
+TypeScript
+Python
+Copy
+await agent.typewrite({
+    conversationId: "conversationId",
+    text: "Here's your message",
+    intervalMs: 60, // optional
+    initialDelayMs: 1500, // optional
+});
+Behind the scenes, AgentLabs will instantiate a new stream and start sending the stream with a nice typewriter effect.
+
+
+Typewriter animation
+How animate your messages properly with Typewrite
+We explained in the previous section that you can use either the send method (for one-off messages) or the write method (for sending streams).
+But sometimes, you want to send some one-off messages that look like streams.
+Since v0.0.51 the Node and Python SDKs provide a typewrite() method that allows you to simulate a stream with a smooth animation, even if you know the content in advance.
+
+Showcasing typewriter animation using typewrite()
+The full code of this video is available here.
+How it works?
+TypeScript
+Python
+Copy
+await agent.typewrite({
+    conversationId: "conversationId",
+    text: "Here's your message",
+    intervalMs: 60, // optional
+    initialDelayMs: 1500, // optional
+});
+Behind the scenes, AgentLabs will instantiate a new stream and start sending the stream with a nice typewriter effect.
+
+
+
+Ping-Pong
+Let's start with a ping pong
+What are we building?
+Let's start with a dead simple example to understand how AgentLabs works.
+In this recipe, we'll create a basic server with one single agent that listens for an incoming message.
+Every time a user sends a message through the Frontend UI, the agent will evaluate it and answer.
+If the message is equal to ping the agent will reply with pong. 
+Otherwise, the agent will say he did not get the message.
+The full example is available in our example repository.
+Requirements
+To follow this tutorial, you must have:
+some basic programming skills in Python or Typescript
+created a project and an agent in your console
+Let's code
+Initializing the SDK
+First, we must initialize the SDK with the project ID and the secret key.
+You can find this information on your admin console.
+Typescript
+Python
+Copy
+import { Project } from 'agentlabs-sdk';
+
+const project = new Project({
+    projectId: 'you-project-id',
+    secret: 'your-secret',
+});
+
+const agent = project.agent('agent-id');
+Listen for messages
+Now, we can use the onChatMessage method to apply some logic every time the user sends a message in the chat.
+The onChatMessage accepts a callback as an argument, this callback will handle our logic.
+Then, we'll use the send method exposed on the agent instance to send a message back to the chat on behalf of the agent.
+Note the message argument contains some useful data, such as the conversation ID or the message's text.
+Typescript
+Python
+Copy
+import { Project } from 'agentlabs-sdk';
+
+const project = new Project({
+    projectId: 'you-project-id',
+    secret: 'your-secret',
+});
+
+const agent = project.agent('agent-id');
+
+project.onChatMessage((message) => {
+  if (message.text === 'ping') {
+     agent.send({
+        conversationId: message.conversationId,
+        text: 'pong'
+     })
+  } else {
+     agent.send({
+        conversationId: message.conversationId,
+        text: 'I did not get that'
+     })
+  }
+})
+Init the connection
+So far we instantiated our project and agent instances. We also defined the behavior of the agent.
+Now, we need to initiate the connection between your server and ours. 
+No worries, it's the simplest part. We just have to use the project.connect() method.
+Note in Python you will have to use the project.wait() in addition to project.connect().
+Typescript
+Python
+Copy
+import { Project } from 'agentlabs-sdk';
+
+const project = new Project({
+    projectId: 'you-project-id',
+    secret: 'your-secret',
+});
+
+const agent = project.agent('agent-id');
+
+project.onChatMessage((message) => {
+  if (message.text === 'ping') {
+     agent.send({
+        conversationId: message.conversationId,
+        text: 'pong'
+     })
+  } else {
+     agent.send({
+        conversationId: message.conversationId,
+        text: 'I did not get that'
+     })
+  }
+})
+
+project.connect()
+🎉Congrats

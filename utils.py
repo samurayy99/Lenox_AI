@@ -2,7 +2,6 @@ import openai
 import pandas as pd
 import json
 import logging
-import plotly
 from visualize_data import VisualizationConfig, create_visualization
 from typing import Any, Dict, List, Union
 from langchain_core.utils.function_calling import convert_to_openai_function
@@ -22,7 +21,7 @@ class Lenox:
     def __init__(self, tools, document_handler: DocumentHandler, prompt_engine: PromptEngine = None):
         # Initialization similar to your original setup.
         self.functions = [convert_to_openai_function(f) for f in tools]
-        self.model = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0.5).bind(functions=self.functions)
+        self.model = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.5).bind(functions=self.functions)
         self.document_handler = document_handler
         self.prompt_engine = prompt_engine if prompt_engine else PromptEngine()
 
@@ -70,40 +69,52 @@ class Lenox:
             return self.handle_document_query
         else:
             return self.handle_general_query
-        
-        
+
+    def handle_visualization_query(self, query, chat_history, session_id):
+        data = self.fetch_data_for_visualization(query)
+        visualization_type = self.parse_visualization_type(query)
+        visualization_config = VisualizationConfig(data=data, visualization_type=visualization_type)
+        # Assume create_visualization stores the config and returns an ID
+        visualization_id = create_visualization(visualization_config)
+
+        simplified_response = f"Visualization created. [View Visualization](visualization_id={visualization_id})"
+        self.memory.add_message(AIMessage(content=simplified_response, sender="system", session_id=session_id))
+
+        # Return a response that includes the visualization ID instead of the full config
+        return {"type": "visual", "content": visualization_id}
 
     def create_response(self, content, response_type="text") -> dict:
         logging.debug(f"Creating response: {content}, Type: {response_type}")
         if response_type == "visual":
-            # Check if content is already a JSON string
             if isinstance(content, str):
                 try:
-                    # Attempt to parse the string to ensure it's valid JSON
-                    json.loads(content)
-                    # If parsing is successful, use the content directly
+                    json.loads(content)  # Attempt to parse the string to ensure it's valid JSON
                 except json.JSONDecodeError as e:
-                    logging.error(f"Invalid JSON for visualization data: {e}")
+                    logging.error(f"Invalid JSON for visualization data: {e}. Content: {content}")
                     return {"type": "error", "content": "Invalid JSON for visualization data."}
             else:
-                # If content is not a string, attempt to serialize it to JSON
                 try:
                     content = json.dumps(content, cls=plotly.utils.PlotlyJSONEncoder)
                 except TypeError as e:
-                    logging.error(f"Error serializing visualization data: {e}")
+                    logging.error(f"Error serializing visualization data: {e}. Content type: {type(content)}")
                     return {"type": "error", "content": "Error serializing visualization data."}
         else:
-            # For non-visual response types, ensure content is a string
             if not isinstance(content, str):
                 content = str(content)
         return {"type": response_type, "content": content}
-
 
     def handle_general_query(self, query: str, chat_history: List[Dict[str, Any]], session_id: str) -> dict:
         # Enhanced context aggregation to provide better input for the model
         # Adjusted to access the 'content' attribute directly
         context_messages = [msg.content for msg in self.aggregate_context(chat_history)]
+        
+        # Introduce more conversational and empathetic elements into the prompt
+        personalized_intro = "I'm here to help you with anything you need. Let's make this conversation helpful and enjoyable. "
+        query_acknowledgement = f"You asked: '{query}'. Let me think about that."
+        
+        # Incorporating personalized introduction and query acknowledgement into the prompt
         prompt_text = self.prompt_engine.generate_dynamic_prompt(query, context_messages)
+        prompt_text = personalized_intro + query_acknowledgement + prompt_text
 
         result = self.qa.invoke(
             {"input": prompt_text, "chat_history": chat_history},
@@ -111,78 +122,21 @@ class Lenox:
         )
         output = result.get('output', "Error processing the request.")
         if isinstance(output, str):
+            # Adjust the tone of the AI's response to be more conversational and empathetic directly here
+            # For example, appending a friendly sign-off to each response
+            output += " Is there anything else I can help with?"
             self.memory.add_message(AIMessage(content=output, sender="system", session_id=session_id))
         else:
             logging.error(f"Expected 'output' to be a string, got {type(output)}")
             return {"type": "error", "content": "Error processing the request."}
         return {"type": "text", "content": output}
-    
-    
     def aggregate_context(self, chat_history: List[Dict[str, Any]]) -> List[Dict[str, str]]:
         # Aggregate recent messages to provide a rich context for the model
         # You can customize the number of messages to include based on your model's capacity and your use case
         return chat_history[-5:]
 
-    def create_prompt(self, context_messages: List[Dict[str, str]], user_query: str) -> str:
-        # Construct a prompt with the aggregated context and the current user query
-        context = " ".join([msg.content for msg in context_messages])
-        return f"{context} {user_query}"
-    
-    def handle_document_query(self, query, chat_history, session_id):
-        response = self.document_handler.query(query)
-        if not isinstance(response, str):
-            logging.error(f"Expected 'response' to be a string, got {type(response)}")
-            return {"type": "error", "content": "Error processing the document query."}
-        self.memory.add_message(AIMessage(content=response, sender="system", session_id=session_id))
-        return {"type": "text", "content": response}
-    
-    
-    def handle_reddit_query(self, query, chat_history, session_id):
-        if "sentiment" in query:
-            subreddit, keyword = self.extract_reddit_params(query)  # You'll need a helper function for this
-            sentiment = analyze_sentiment(subreddit, keyword) 
-            return {"type": "text", "content": sentiment}
-        elif "trending" in query:
-            subreddit = self.extract_reddit_params(query) 
-            trends = find_trending_topics([subreddit])  # Assuming subreddits are always in a list
-            return {"type": "text", "content": trends}
-        else:
-            # Handle other Reddit query types...
-            parse
-    
-    
-    def handle_visualization_query(self, query, chat_history, session_id):
-        data = self.fetch_data_for_visualization(query)
-        visualization_type = self.parse_visualization_type(query)
-        title = self.parse_title_from_query(query)
-        additional_kwargs = self.parse_additional_kwargs(query)
 
-        visualization_config = VisualizationConfig(
-            data=data, 
-            visualization_type=visualization_type, 
-            title=title, 
-            additional_kwargs=additional_kwargs
-        )
-        visualization_content_str = create_visualization(visualization_config)
-
-        response = self.create_response(visualization_content_str, response_type="visual")
-        # ... rest of your handling logic... 
-
-    def parse_title_from_query(self, query):
-        if "title:" in query:
-            return query.split("title:")[1].strip()
-        else:
-            return "My Visualization"  # Default title
-
-    def parse_additional_kwargs(self, query):
-        kwargs = {}
-        if "x label:" in query:
-            kwargs['x_label'] = query.split("x label:")[1].strip()
-        if "y label:" in query:
-            kwargs['y_label'] = query.split("y label:")[1].strip()
-        return kwargs
-    
-    
+        
     def is_visualization_query(self, query: str) -> bool:
         visualization_keywords = ["visualize", "graph", "chart", "plot", "show me a graph of", "display data"]
         return any(keyword in query.lower() for keyword in visualization_keywords)
@@ -201,5 +155,11 @@ class Lenox:
         else:
             data = {'x': [1, 2, 3, 4], 'y': [10, 11, 12, 13], 'type': 'scatter'}
         return data
-
     
+    def handle_document_query(self, query, chat_history, session_id):
+        response = self.document_handler.query(query)
+        if not isinstance(response, str):
+            logging.error(f"Expected 'response' to be a string, got {type(response)}")
+            return {"type": "error", "content": "Error processing the document query."}
+        self.memory.add_message(AIMessage(content=response, sender="system", session_id=session_id))
+        return {"type": "text", "content": response}

@@ -19,34 +19,27 @@ class PromptEngine:
         self.max_tokens = max_tokens
 
     def generate_dynamic_prompt(self, user_query: str, context_messages: list, prompt_template: str = None) -> str:
-        """
-        Generates a dynamic prompt based on the user query, context messages, and an optional template, while managing token limits.
-
-        :param user_query: The user's query.
-        :param context_messages: A list of context messages.
-        :param prompt_template: An optional template for generating the prompt.
-        :return: A dynamically generated prompt.
-        """
         try:
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            context = " ".join(context_messages[-self.context_length:])  # Initial context based on context_length
+            # Dynamically adjust context length based on the length of the user query
+            estimated_query_tokens = len(user_query.split())
+            max_context_tokens = self.max_tokens - estimated_query_tokens - 100  # Reserve tokens for template text
 
-            # Initial prompt template
-            prompt = prompt_template if prompt_template else f"Time: {now}\nContext: {context}\nUser Query: {user_query}\n"
+            # Safely extract the 'content' from each message dictionary
+            message_contents = [msg['content'] for msg in context_messages if 'content' in msg]
+            
+            # Concatenate context messages and truncate if necessary
+            full_context = " ".join(message_contents[-self.context_length:])  # Use message_contents here
+            context_tokens = full_context.split()
+            if len(context_tokens) > max_context_tokens:
+                truncated_context = " ".join(context_tokens[-max_context_tokens:])
+            else:
+                truncated_context = full_context
+
+            # Construct the prompt
+            prompt = prompt_template if prompt_template else f"Time: {now}\nContext: {truncated_context}\nUser Query: {user_query}\n"
             prompt += "Provide a detailed, accurate answer based on the above query and context.\n"
-
-            # Replace placeholders with actual values
-            prompt = prompt.format(now=now, context=context, user_query=user_query)
-
-            # Check if the generated prompt exceeds the max_tokens limit
-            if len(prompt.split()) > self.max_tokens:
-                # If it does, reduce the context until the prompt is within the token limit
-                while len(prompt.split()) > self.max_tokens and self.context_length > 0:
-                    self.context_length -= 1  # Reduce context length
-                    context = " ".join(context_messages[-self.context_length:])  # Regenerate context
-                    prompt = prompt_template if prompt_template else f"Time: {now}\nContext: {context}\nUser Query: {user_query}\n"
-                    prompt += "Provide a detailed, accurate answer based on the above query and context.\n"
-                    prompt = prompt.format(now=now, context=context, user_query=user_query)  # Reapply formatting
+            prompt = prompt.format(now=now, context=truncated_context, user_query=user_query)
 
             logging.info(f"Generated prompt: {prompt}")
             return prompt
