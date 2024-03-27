@@ -26,20 +26,20 @@ class SQLChatMessageHistory(BaseChatMessageHistory):
         self.Session = sessionmaker(bind=self.engine)
        
     
-
     def get_trimmed_messages(self, limit: int = 15) -> List[BaseMessage]:
         """
         Retrieve the latest 'limit' messages from the chat history, trimming if necessary.
         """
         try:
             with self.Session() as session:
-                db_messages = session.query(Message).order_by(Message.id.desc()).limit(limit).all()
+                db_messages = session.query(Message).filter(
+                    Message.session_id == self.session_id
+                ).order_by(Message.id.desc()).limit(limit).all()
                 db_messages = list(reversed(db_messages))
                 return [messages_from_dict([json.loads(db_message.message)])[0] for db_message in db_messages]
         except Exception as e:
             logger.error(f"Failed to retrieve messages: {e}")
-            return []
-   
+            return []    
         
         
 

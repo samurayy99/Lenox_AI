@@ -3,6 +3,7 @@ import os
 from flask_cors import CORS
 from dotenv import load_dotenv
 import logging
+import plotly.graph_objs
 from logging.handlers import RotatingFileHandler
 from documents import DocumentHandler, allowed_file
 from utils import Lenox
@@ -55,6 +56,15 @@ lenox = Lenox(
     document_handler=document_handler  # Pass the document handler as a named argument
 )
 
+@app.before_request
+def before_request_logging():
+    app.logger.debug(f'Incoming request: {request.method} {request.path}')
+
+@app.after_request
+def after_request_logging(response):
+    app.logger.debug(f'Outgoing response: {response.status}')
+    return response
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -63,11 +73,36 @@ def index():
 def handle_query():
     data = request.get_json()
     query = data.get('query', '')
-    session_id = data.get('session_id', 'default_session')  # Sie möchten die Session-ID möglicherweise dynamischer handhaben
+    session_id = data.get('session_id', 'default_session')  # You might want to handle session ID more dynamically
     if not query:
-        return jsonify({'error': 'Leere Anfrage.'}), 400
+        return jsonify({'error': 'Empty query.'}), 400
     response = lenox.convchain(query, session_id)
     return jsonify(response)
+
+
+@app.route('/create_visualization', methods=['POST'])
+def create_visualization():
+    data = request.get_json()
+    x_data = data['x']
+    y_data = data['y']
+    graphJSON = lenox.create_visualization(x_data, y_data)
+    return jsonify(graphJSON)
+
+@app.errorhandler(500)
+def handle_error(error):
+    app.logger.error(f'Internal Server Error: {error}')
+    return jsonify({'error': 'An internal server error has occurred.'}), 500
+
+@app.errorhandler(404)
+def handle_404_error(error):
+    app.logger.error(f'404 Not Found: {error}')
+    return jsonify({'error': 'Resource not found.'}), 404
+
+@app.route('/data', methods=['GET'])
+def get_data():
+    data = lenox.get_sample_data()
+    return jsonify(data)
+
 
 @app.route('/upload', methods=['POST'])
 def upload_document():
@@ -85,15 +120,7 @@ def upload_document():
         else:
             return jsonify({'error': message}), 400
 
-@app.errorhandler(500)
-def handle_error(error):
-    app.logger.error(f'Interner Serverfehler: {error}')
-    return jsonify({'error': 'Ein interner Serverfehler ist aufgetreten.'}), 500
 
-@app.errorhandler(404)
-def handle_404_error(error):
-    app.logger.error(f'404 Nicht gefunden: {error}')
-    return jsonify({'error': 'Ressource nicht gefunden.'}), 404
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=os.getenv('FLASK_DEBUG', 'False') == 'True')
