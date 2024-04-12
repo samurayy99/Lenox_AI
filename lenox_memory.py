@@ -24,24 +24,6 @@ class SQLChatMessageHistory(BaseChatMessageHistory):
         self.engine = create_engine(connection_string, echo=True)
         Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
-       
-    
-    def get_trimmed_messages(self, limit: int = 15) -> List[BaseMessage]:
-        """
-        Retrieve the latest 'limit' messages from the chat history, trimming if necessary.
-        """
-        try:
-            with self.Session() as session:
-                db_messages = session.query(Message).filter(
-                    Message.session_id == self.session_id
-                ).order_by(Message.id.desc()).limit(limit).all()
-                db_messages = list(reversed(db_messages))
-                return [messages_from_dict([json.loads(db_message.message)])[0] for db_message in db_messages]
-        except Exception as e:
-            logger.error(f"Failed to retrieve messages: {e}")
-            return []    
-        
-        
 
     def add_message(self, message: BaseMessage) -> None:
         try:
@@ -52,7 +34,7 @@ class SQLChatMessageHistory(BaseChatMessageHistory):
         except Exception as e:
             logger.error(f"Failed to add message: {e}")
 
-    def messages(self, limit: int = 15) -> List[BaseMessage]:
+    def messages(self, limit: int = 10) -> List[BaseMessage]:
         try:
             with self.Session() as session:
                 # Abfrage anpassen, um nur die letzten `limit` Nachrichten zurückzugeben
@@ -71,24 +53,15 @@ class SQLChatMessageHistory(BaseChatMessageHistory):
                 session.commit()
         except Exception as e:
             logger.error(f"Failed to clear messages: {e}")
-            
-            
-    
+
     def load_memory_variables(self) -> Dict[str, Any]:
         # Implementiere die Methode, um Speichervariablen zu laden
-        with self.Session() as session:
-            context = session.query(Context).filter(Context.session_id == self.session_id).first()
-            return json.loads(context.variables) if context else {}
+        return {}
+
+    def memory_variables(self) -> List[str]:
+        # Implementiere die Methode, um eine Liste der Speichervariablen zu erhalten
+        return []
 
     def save_context(self, context: Dict[str, Any]) -> None:
         # Implementiere die Methode, um den Kontext zu speichern
-        with self.Session() as session:
-            existing_context = session.query(Context).filter(Context.session_id == self.session_id).first()
-            if existing_context:
-                existing_context.variables = json.dumps(context)
-            else:
-                new_context = Context(session_id=self.session_id, variables=json.dumps(context))
-                session.add(new_context)
-            session.commit()
-        
-            
+        pass

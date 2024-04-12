@@ -48,27 +48,6 @@ def get_liquidity_score(coin_id: str) -> str:
     except Exception as e:
         return f"Error fetching liquidity score: {e}"
 
-@tool
-@cached(cache)
-def get_market_data_overview() -> str:
-    """
-    Fetches and returns an overview of market data including total market cap, volume, and Bitcoin dominance.
-    """
-    api_url = "https://api.coingecko.com/api/v3/global"
-    try:
-        response = requests.get(api_url)
-        response.raise_for_status()
-        data = response.json().get('data', {})
-        total_market_cap = data.get('total_market_cap', {}).get('usd', 'N/A')
-        total_volume = data.get('total_volume', {}).get('usd', 'N/A')
-        bitcoin_dominance = data.get('market_cap_percentage', {}).get('btc', 'N/A')
-        return {
-            "Total Market Cap": total_market_cap,
-            "Total Volume": total_volume,
-            "Bitcoin Dominance": f"{bitcoin_dominance} %",
-        }
-    except Exception as e:
-        return f"Error fetching market data overview: {e}"
 
 @tool
 @cached(cache)
@@ -93,46 +72,6 @@ def get_top_gainers(vs_currency: str = "usd", limit: int = 10) -> str:
         return [{coin['id']: coin['price_change_percentage_24h']} for coin in gainers]
     except Exception as e:
         return f"Error fetching top gainers: {e}"
-
-@tool
-@cached(cache)
-def get_top_losers(vs_currency: str = "usd", limit: int = 10) -> str:
-    """
-    Fetches and returns the top losers in the market.
-    """
-    api_url = "https://api.coingecko.com/api/v3/coins/markets"
-    params = {
-        "vs_currency": vs_currency,
-        "order": "market_cap_desc",
-        "per_page": limit,
-        "page": 1,
-        "sparkline": False,
-        "price_change_percentage": "24h",
-    }
-    try:
-        response = requests.get(api_url, params=params)
-        response.raise_for_status()
-        data = response.json()
-        losers = sorted(data, key=lambda x: x.get('price_change_percentage_24h', 0))
-        return [{coin['id']: coin['price_change_percentage_24h']} for coin in losers]
-    except Exception as e:
-        return f"Error fetching top losers: {e}"
-
-@tool
-@cached(cache)
-def get_trending_coins() -> str:
-    """
-    Fetches and returns the trending coins on CoinGecko.
-    """
-    api_url = "https://api.coingecko.com/api/v3/search/trending"
-    try:
-        response = requests.get(api_url)
-        response.raise_for_status()
-        data = response.json()
-        coins = data.get('coins', [])
-        return [coin['item']['id'] for coin in coins]
-    except Exception as e:
-        return f"Error fetching trending coins: {e}"
     
     
 @tool

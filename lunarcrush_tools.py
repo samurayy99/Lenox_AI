@@ -67,3 +67,32 @@ def get_influential_crypto_assets() -> str:
         return result_str
     except Exception as e:
         return f"Error fetching influential crypto assets: {str(e)}" 
+    
+
+@tool
+def get_latest_social_feeds(input: dict) -> str:
+    """
+    Fetches and analyzes the latest social feeds for a specific cryptocurrency, providing insights into current discussions and sentiment.
+    """
+    try:
+        # Manually validate the input using CryptoDataInput
+        validated_input = CryptoDataInput(**input)
+        api_url = f"https://api.lunarcrush.com/v2?data=feeds&key={os.getenv('LUNARCRUSH_API_KEY')}&symbol={validated_input.symbol}&limit=5"
+        response = requests.get(api_url)
+        data = response.json()
+        # Rest of the function remains the same...
+        feeds = data.get('data', [])
+        if not feeds:
+            return f"No recent social feeds available for {input.symbol}."
+
+        result_str = f"Latest social feeds for {input.symbol}:\n"
+        for feed in feeds:
+            content = feed.get('body', 'No content available.').replace('\n', ' ')
+            time = feed.get('time', 'No time provided.')
+            source = feed.get('source', 'No source provided.')
+            result_str += f"Time: {time}, Source: {source}, Content: {content}\n"
+        
+        return result_str.strip()
+    except Exception as e:
+        return f"Error fetching social feeds: {str(e)}"
+    

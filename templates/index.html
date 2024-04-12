@@ -3,9 +3,9 @@
 
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
   <title>Lenox Chat</title>
   <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
@@ -17,30 +17,24 @@
       <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Lenox Chat Logo" style="height: 50px;">
       <h2>Lenox Chat</h2>
     </div>
-    <div id="chat-messages" class="chat-messages">
-      <!-- Messages will be displayed here -->
-    </div>
-    <div id="visualization" class="visualization">
-      <!-- Visualizations will be displayed here -->
-    </div>
+    <div id="chat-messages" class="chat-messages"></div>
+    <div id="visualization" class="visualization"></div>
     <div class="chat-input-container">
       <input type="text" id="query" class="chat-input" placeholder="Ask Lenox something..." autofocus>
-      <button id="sendButton" onclick="submitQuery()">Send</button>
+      <button id="sendButton">Send</button>
     </div>
-    <!-- File upload form -->
     <div class="upload-container">
       <form id="uploadForm" enctype="multipart/form-data">
         <label for="fileUpload">Upload documents:</label>
         <input type="file" id="fileUpload" name="file" multiple>
-        <button type="button" onclick="uploadDocument()">Upload</button>
+        <button type="submit">Upload</button>
       </form>
     </div>
   </div>
   <script src="{{ url_for('static', filename='script.js') }}"></script>
   <div id="loadingIndicator" class="loading-indicator" style="display: none;">
     <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Loading...">
-  </div
-  
+  </div>
 </body>
 
 </html>

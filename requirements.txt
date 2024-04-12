@@ -26,4 +26,5 @@ llama-index-embeddings-langchain
 termcolor
 watchdog
 nltk
-
+langsmith
+spacy
