@@ -80,3 +80,11 @@ class DocumentHandler:
         except Exception as e:
             logging.error(f"Error saving document: {e}")
             return False, f"Error saving document: {e}"
+        
+    def handle_document_request(query, chat_history):
+        document_details = query_document_index(query)
+        if not document_details:
+            return {"type": "error", "content": "Document not found."}
+        return {"type": "document", "content": document_details}
+    
+        

@@ -1,53 +1,81 @@
-Error in TTS synthesis: a bytes-like object is required, not 'list'
+Exception on /query [POST]
 Traceback (most recent call last):
-  File "/Users/lenox27/LENOX/main.py", line 140, in handle_tts_request
-    f.write(wav)
-TypeError: a bytes-like object is required, not 'list'
-Error in TTS synthesis: a bytes-like object is required, not 'list'
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/pydantic/v1/main.py", line 522, in parse_obj
+    obj = dict(obj)
+          ^^^^^^^^^
+TypeError: 'int' object is not iterable
+
+The above exception was the direct cause of the following exception:
+
 Traceback (most recent call last):
-  File "/Users/lenox27/LENOX/main.py", line 140, in handle_tts_request
-    f.write(wav)
-TypeError: a bytes-like object is required, not 'list'
-Error in TTS synthesis: a bytes-like object is required, not 'list'
-Traceback (most recent call last):
-  File "/Users/lenox27/LENOX/main.py", line 140, in handle_tts_request
-    f.write(wav)
-TypeError: a bytes-like object is required, not 'list'
-Error in TTS synthesis: send_file() got an unexpected keyword argument 'attachment_filename'
-Traceback (most recent call last):
-  File "/Users/lenox27/LENOX/main.py", line 146, in handle_tts_request
-    return send_file(temp_file.name, as_attachment=True, attachment_filename='output.wav', mimetype='audio/wav')
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: send_file() got an unexpected keyword argument 'attachment_filename'
-Error in TTS synthesis: 'TTS' object has no attribute 'ap'
-Traceback (most recent call last):
-  File "/Users/lenox27/LENOX/main.py", line 146, in handle_tts_request
-    wavfile.write(temp_file.name, tts.ap.sample_rate, wav)
-                                  ^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1688, in __getattr__
-    raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
-AttributeError: 'TTS' object has no attribute 'ap'
-Error in TTS synthesis: 'TTS' object has no attribute 'ap'
-Traceback (most recent call last):
-  File "/Users/lenox27/LENOX/main.py", line 146, in handle_tts_request
-    wavfile.write(temp_file.name, tts.ap.sample_rate, wav)
-                                  ^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1688, in __getattr__
-    raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
-AttributeError: 'TTS' object has no attribute 'ap'
-Error in TTS synthesis: 'list' object has no attribute 'astype'
-Traceback (most recent call last):
-  File "/Users/lenox27/LENOX/main.py", line 149, in handle_tts_request
-    wavfile.write(temp_file.name, sample_rate, wav.astype(np.int16))
-                                               ^^^^^^^^^^
-AttributeError: 'list' object has no attribute 'astype'
-Error in TTS synthesis: 'list' object has no attribute 'astype'
-Traceback (most recent call last):
-  File "/Users/lenox27/LENOX/main.py", line 149, in handle_tts_request
-    wavfile.write(temp_file.name, sample_rate, wav.astype(np.int16))
-                                               ^^^^^^^^^^
-AttributeError: 'list' object has no attribute 'astype'
-Flask application started
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 1463, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 872, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask_cors/extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 870, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 855, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/main.py", line 52, in handle_query
+    return jsonify(lenox.convchain(query, session['session_id']))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 61, in convchain
+    return self.handle_general_query(query, chat_history, session_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 69, in handle_general_query
+    result = self.qa.invoke({"input": prompt_text, "chat_history": chat_history},
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/chains/base.py", line 163, in invoke
+    raise e
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/chains/base.py", line 153, in invoke
+    self._call(inputs, run_manager=run_manager)
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1432, in _call
+    next_step_output = self._take_next_step(
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1138, in _take_next_step
+    [
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1138, in <listcomp>
+    [
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1223, in _iter_next_step
+    yield self._perform_agent_action(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1245, in _perform_agent_action
+    observation = tool.run(
+                  ^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 387, in run
+    raise e
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 381, in run
+    self._run(*tool_args, run_manager=run_manager, **tool_kwargs)
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 705, in _run
+    else self.func(*args, **kwargs)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/etherscan_tools.py", line 73, in get_whale_insights
+    recent_blocks = get_recent_blocks(block_count)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 522, in __call__
+    return self.run(tool_input, callbacks=callbacks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 387, in run
+    raise e
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 378, in run
+    parsed_input = self._parse_input(tool_input)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 283, in _parse_input
+    result = input_args.parse_obj(tool_input)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/pydantic/v1/main.py", line 525, in parse_obj
+    raise ValidationError([ErrorWrapper(exc, loc=ROOT_KEY)], cls) from e
+pydantic.v1.error_wrappers.ValidationError: 1 validation error for get_recent_blocksSchema
+__root__
+  get_recent_blocksSchema expected dict not int (type=type_error)
+Outgoing response: 500 INTERNAL SERVER ERROR
 Incoming request: GET /
 Outgoing response: 200 OK
 Incoming request: GET /static/styles.css
@@ -59,123 +87,66 @@ Outgoing response: 304 NOT MODIFIED
 Incoming request: GET /static/images/favicon.ico
 Outgoing response: 304 NOT MODIFIED
 Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Flask application started
-Incoming request: GET /static/styles.css
-Outgoing response: 304 NOT MODIFIED
-Incoming request: GET /static/images/logo.png
-Outgoing response: 304 NOT MODIFIED
-Incoming request: GET /static/script.js
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Flask application started
-Incoming request: GET /static/styles.css
-Incoming request: GET /static/images/logo.png
-Incoming request: GET /static/script.js
-Outgoing response: 304 NOT MODIFIED
-Outgoing response: 304 NOT MODIFIED
-Outgoing response: 304 NOT MODIFIED
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Flask application started
-Incoming request: GET /static/styles.css
-Incoming request: GET /static/images/logo.png
-Incoming request: GET /static/script.js
-Outgoing response: 304 NOT MODIFIED
-Outgoing response: 304 NOT MODIFIED
-Outgoing response: 304 NOT MODIFIED
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Flask application started
+Exception on /query [POST]
+Traceback (most recent call last):
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 1463, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 872, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask_cors/extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 870, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 855, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/main.py", line 52, in handle_query
+    return jsonify(lenox.convchain(query, session['session_id']))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 61, in convchain
+    return self.handle_general_query(query, chat_history, session_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/utils.py", line 69, in handle_general_query
+    result = self.qa.invoke({"input": prompt_text, "chat_history": chat_history},
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/chains/base.py", line 163, in invoke
+    raise e
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/chains/base.py", line 153, in invoke
+    self._call(inputs, run_manager=run_manager)
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1432, in _call
+    next_step_output = self._take_next_step(
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1138, in _take_next_step
+    [
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1138, in <listcomp>
+    [
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1223, in _iter_next_step
+    yield self._perform_agent_action(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1245, in _perform_agent_action
+    observation = tool.run(
+                  ^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 387, in run
+    raise e
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 378, in run
+    parsed_input = self._parse_input(tool_input)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 283, in _parse_input
+    result = input_args.parse_obj(tool_input)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/pydantic/v1/main.py", line 526, in parse_obj
+    return cls(**obj)
+           ^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/pydantic/v1/main.py", line 341, in __init__
+    raise validation_error
+pydantic.v1.error_wrappers.ValidationError: 1 validation error for get_recent_blocksSchema
+tool_input
+  field required (type=value_error.missing)
+Outgoing response: 500 INTERNAL SERVER ERROR
 Incoming request: GET /
 Outgoing response: 200 OK
 Incoming request: GET /static/styles.css
@@ -186,36 +157,3 @@ Incoming request: GET /static/script.js
 Outgoing response: 304 NOT MODIFIED
 Incoming request: GET /static/images/favicon.ico
 Outgoing response: 304 NOT MODIFIED
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query
-Outgoing response: 200 OK
-Incoming request: POST /query

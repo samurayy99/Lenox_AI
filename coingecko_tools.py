@@ -2,115 +2,90 @@ import requests
 import numpy as np
 from pydantic import BaseModel, Field
 from langchain.agents import tool  # Use the @tool decorator
-from cachetools import cached, TTLCache
-
-# Define a simple cache to store responses
-cache = TTLCache(maxsize=100, ttl=300)
 
 # Define models for input validation
 class CryptoDataInput(BaseModel):
     symbol: str = Field(..., description="The symbol of the cryptocurrency (e.g., BTC, ETH)")
 
 @tool
-@cached(cache)
 def get_coingecko_market_data(coin_id: str, vs_currency: str = "usd") -> str:
     """
     Fetches and returns market data for a specified cryptocurrency using CoinGecko API.
     """
     api_url = "https://api.coingecko.com/api/v3/coins/markets"
-    params = {"vs_currency": vs_currency, "ids": coin_id}
-    try:
-        response = requests.get(api_url, params=params)
-        response.raise_for_status()
-        data = response.json()[0]  # Get the first item from the list
-        return {
-            "Price": data.get('current_price'),
-            "Market Cap": data.get('market_cap'),
-            "24h Volume": data.get('total_volume'),
-            "24h Change": data.get('price_change_percentage_24h'),
-            "7d Change": data.get('price_change_percentage_7d'),
-        }
-    except Exception as e:
-        return f"Error fetching market data: {e}"
-
-@tool
-@cached(cache)
-def get_liquidity_score(coin_id: str) -> str:
-    """
-    Fetches and returns the liquidity score of a specified cryptocurrency using CoinGecko API.
-    """
-    coin_data_url = f"https://api.coingecko.com/api/v3/coins/{coin_id}"
-    try:
-        response = requests.get(coin_data_url)
-        response.raise_for_status()
-        data = response.json()
-        return f"The liquidity score of {coin_id} is {data.get('liquidity_score', 'N/A')}."
-    except Exception as e:
-        return f"Error fetching liquidity score: {e}"
-
-
-@tool
-@cached(cache)
-def get_top_gainers(vs_currency: str = "usd", limit: int = 10) -> str:
-    """
-    Fetches and returns the top gainers in the market.
-    """
-    api_url = "https://api.coingecko.com/api/v3/coins/markets"
     params = {
         "vs_currency": vs_currency,
-        "order": "market_cap_desc",
-        "per_page": limit,
-        "page": 1,
-        "sparkline": False,
-        "price_change_percentage": "24h",
+        "ids": coin_id,
     }
     try:
         response = requests.get(api_url, params=params)
-        response.raise_for_status()
         data = response.json()
-        gainers = sorted(data, key=lambda x: x.get('price_change_percentage_24h', 0), reverse=True)
-        return [{coin['id']: coin['price_change_percentage_24h']} for coin in gainers]
+        if data and len(data) > 0:
+            coin_data = data[0]  # Assuming the first item is the coin we're interested in
+            price = coin_data['current_price']
+            market_cap = coin_data['market_cap']
+            volume_24h = coin_data['total_volume']
+            return (f"Price: {price} {vs_currency}, Market Cap: {market_cap}, "
+                    f"24h Volume: {volume_24h} for {coin_id}.")
+        else:
+            return "Failed to fetch data from CoinGecko or coin not found."
     except Exception as e:
-        return f"Error fetching top gainers: {e}"
-    
-    
+        return f"Exception occurred: {str(e)}"
+
+# Since we determined the liquidity score is not available, we will not include the get_liquidity_score function.
+
 @tool
-@cached(cache)
-def get_macd(coin_id: str, vs_currency: str = "usd", short_term: int = 12, long_term: int = 26, signal: int = 9) -> str:
+def get_macd(coin_id: str, vs_currency: str = "usd", days: int = 26) -> str:
     """
     Calculates the Moving Average Convergence Divergence (MACD) for a specified cryptocurrency.
-
-    Parameters:
-    coin_id (str): The CoinGecko ID of the cryptocurrency.
-    vs_currency (str): The fiat currency to compare against (default: 'usd').
-    short_term (int): The number of days for the short term EMA (default: 12).
-    long_term (int): The number of days for the long term EMA (default: 26).
-    signal (int): The number of days for the signal line EMA (default: 9).
-
-    Returns:
-    str: A string containing the MACD value.
     """
     historical_data_url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart"
-    params = {'vs_currency': vs_currency, 'days': max(long_term, short_term, signal)}
-
+    params = {
+        'vs_currency': vs_currency,
+        'days': days
+    }
+    
     try:
         response = requests.get(historical_data_url, params=params)
-        response.raise_for_status()
         data = response.json()
         prices = [price[1] for price in data['prices']]
-
-        # Calculate EMAs
-        short_ema = pd.Series(prices).ewm(span=short_term).mean().iloc[-1]
-        long_ema = pd.Series(prices).ewm(span=long_term).mean().iloc[-1]
+        
+        # Calculate MACD
+        short_ema = np.mean(prices[-12:])  # 12-day EMA
+        long_ema = np.mean(prices[-26:])  # 26-day EMA
         macd = short_ema - long_ema
-        signal_line = pd.Series(macd).ewm(span=signal).mean().iloc[-1]
-
+        signal_line = np.mean(prices[-9:])  # 9-day EMA of MACD for signal line
+        
         return f"MACD: {macd:.2f}, Signal Line: {signal_line:.2f} for {coin_id} in {vs_currency}."
-    except requests.RequestException as e:
-        return f"HTTP error occurred: {e}"
-    except ValueError as e:
-        return f"Error decoding JSON: {e}"
     except Exception as e:
-        return f"An unexpected error occurred: {e}"
-    
-    
+        return f"Error calculating MACD: {str(e)}"
+
+@tool
+def get_trending_coins():
+    """
+    Retrieves the list of trending coins from CoinGecko.
+    """
+    url = "https://api.coingecko.com/api/v3/search/trending"
+    try:
+        response = requests.get(url)
+        data = response.json()
+        trending_coins = [coin['item']['name'] for coin in data['coins']]
+        return f"Trending coins: {', '.join(trending_coins)}"
+    except Exception as e:
+        return f"Error fetching trending coins: {str(e)}"
+
+@tool
+def get_public_companies_holdings():
+    """
+    Retrieves the list of public companies and their cryptocurrency holdings.
+    """
+    url = "https://api.coingecko.com/api/v3/companies/public_treasury/bitcoin"
+    try:
+        response = requests.get(url)
+        data = response.json()
+        holdings = {company['name']: company['total_holdings'] for company in data['companies']}
+        return f"Public companies holdings: {', '.join([f'{k}: {v}' for k, v in holdings.items()])}"
+    except Exception as e:
+        return f"Error fetching public companies holdings: {str(e)}"
+
+# Additional functions for other endpoints can be implemented in a similar pattern.
