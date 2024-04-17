@@ -16,20 +16,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
+
+
 async function submitQuery() {
     const queryInput = document.getElementById('query');
     const query = queryInput.value.trim();
-    if (!query) return; // Exit if query is empty
+    if (!query) return;
 
     appendMessage(query, 'user-message');
     queryInput.value = ''; // Clear the input field after getting the query
     showLoadingIndicator(true);
 
+    // Adjusted to include any phrase starting with "search the web for" or just "search:"
+    const endpoint = query.toLowerCase().includes("search the web for") || query.toLowerCase().includes("search:") ? '/web_search' : '/query';
+    console.log("Using endpoint:", endpoint);
+    const adjustedQuery = query.toLowerCase().replace("search the web for", "").replace("search:", "").trim();
+
     try {
-        const response = await fetch('/query', {
+        const response = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query })
+            body: JSON.stringify({ query: adjustedQuery, detailed: endpoint === '/web_search' })
         });
 
         if (!response.ok) {
@@ -44,9 +51,28 @@ async function submitQuery() {
     } finally {
         showLoadingIndicator(false);
     }
-} // Corrected by adding the missing closing brace
+}
+
+
+
+
+
 
 let visualizationCount = 0; // Global counter for visualization elements
+
+
+function handleWebSearchResults(data) {
+    if (data.results && Array.isArray(data.results)) {
+        data.results.forEach(result => {
+            appendMessage(result, 'bot-message');
+        });
+    } else {
+        console.error('Unexpected format for search results:', data);
+        appendMessage('Error displaying search results.', 'error-message');
+    }
+}
+
+
 
 async function processUserInput(query) {
     if (!query) return;
@@ -189,10 +215,13 @@ function processResponseData(data) {
     } else if (data.type === 'error') {
         console.error('Error response received:', data.content);
         appendMessage(data.content, 'error-message');
+    } else if (data.type === 'search_results') { // Added condition for handling search results
+        handleWebSearchResults(data); // Call the function to handle search results
     } else {
         console.error('Unexpected response type:', data.type);
     }
 }
+
 
 function appendMessage(message, className) {
     const chatMessages = document.getElementById('chat-messages');

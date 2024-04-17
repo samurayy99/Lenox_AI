@@ -1,159 +1,27 @@
-Exception on /query [POST]
-Traceback (most recent call last):
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/pydantic/v1/main.py", line 522, in parse_obj
-    obj = dict(obj)
-          ^^^^^^^^^
-TypeError: 'int' object is not iterable
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 1463, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 872, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask_cors/extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 870, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 855, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/main.py", line 52, in handle_query
-    return jsonify(lenox.convchain(query, session['session_id']))
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/utils.py", line 61, in convchain
-    return self.handle_general_query(query, chat_history, session_id)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/utils.py", line 69, in handle_general_query
-    result = self.qa.invoke({"input": prompt_text, "chat_history": chat_history},
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/chains/base.py", line 163, in invoke
-    raise e
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/chains/base.py", line 153, in invoke
-    self._call(inputs, run_manager=run_manager)
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1432, in _call
-    next_step_output = self._take_next_step(
-                       ^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1138, in _take_next_step
-    [
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1138, in <listcomp>
-    [
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1223, in _iter_next_step
-    yield self._perform_agent_action(
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1245, in _perform_agent_action
-    observation = tool.run(
-                  ^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 387, in run
-    raise e
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 381, in run
-    self._run(*tool_args, run_manager=run_manager, **tool_kwargs)
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 705, in _run
-    else self.func(*args, **kwargs)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/etherscan_tools.py", line 73, in get_whale_insights
-    recent_blocks = get_recent_blocks(block_count)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 522, in __call__
-    return self.run(tool_input, callbacks=callbacks)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 387, in run
-    raise e
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 378, in run
-    parsed_input = self._parse_input(tool_input)
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 283, in _parse_input
-    result = input_args.parse_obj(tool_input)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/pydantic/v1/main.py", line 525, in parse_obj
-    raise ValidationError([ErrorWrapper(exc, loc=ROOT_KEY)], cls) from e
-pydantic.v1.error_wrappers.ValidationError: 1 validation error for get_recent_blocksSchema
-__root__
-  get_recent_blocksSchema expected dict not int (type=type_error)
-Outgoing response: 500 INTERNAL SERVER ERROR
-Incoming request: GET /
+Processed query with convchain, result: {'type': 'text', 'content': "Feel free to share whatever is on your mind, whether it's related to cryptocurrencies, financial markets, or any other topic you'd like to discuss. I'm here to listen and assist you in any way I can!"}
 Outgoing response: 200 OK
-Incoming request: GET /static/styles.css
-Incoming request: GET /static/images/logo.png
-Incoming request: GET /static/script.js
-Outgoing response: 304 NOT MODIFIED
-Outgoing response: 304 NOT MODIFIED
-Outgoing response: 304 NOT MODIFIED
-Incoming request: GET /static/images/favicon.ico
-Outgoing response: 304 NOT MODIFIED
 Incoming request: POST /query
-Exception on /query [POST]
-Traceback (most recent call last):
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 1463, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 872, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask_cors/extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 870, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 855, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/main.py", line 52, in handle_query
-    return jsonify(lenox.convchain(query, session['session_id']))
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/utils.py", line 61, in convchain
-    return self.handle_general_query(query, chat_history, session_id)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/utils.py", line 69, in handle_general_query
-    result = self.qa.invoke({"input": prompt_text, "chat_history": chat_history},
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/chains/base.py", line 163, in invoke
-    raise e
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/chains/base.py", line 153, in invoke
-    self._call(inputs, run_manager=run_manager)
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1432, in _call
-    next_step_output = self._take_next_step(
-                       ^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1138, in _take_next_step
-    [
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1138, in <listcomp>
-    [
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1223, in _iter_next_step
-    yield self._perform_agent_action(
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain/agents/agent.py", line 1245, in _perform_agent_action
-    observation = tool.run(
-                  ^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 387, in run
-    raise e
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 378, in run
-    parsed_input = self._parse_input(tool_input)
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/langchain_core/tools.py", line 283, in _parse_input
-    result = input_args.parse_obj(tool_input)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/pydantic/v1/main.py", line 526, in parse_obj
-    return cls(**obj)
-           ^^^^^^^^^^
-  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/pydantic/v1/main.py", line 341, in __init__
-    raise validation_error
-pydantic.v1.error_wrappers.ValidationError: 1 validation error for get_recent_blocksSchema
-tool_input
-  field required (type=value_error.missing)
-Outgoing response: 500 INTERNAL SERVER ERROR
-Incoming request: GET /
+Processed query with convchain, result: {'type': 'text', 'content': "I appreciate your kind words and the way you see our interaction. Building a friendly and supportive relationship is important to me, so I'm glad to be your digital friend in this journey through the world of cryptocurrencies and markets. If there's anything you'd like to discuss or explore further, feel free to share, and I'll be here to assist you! 😊🌟"}
 Outgoing response: 200 OK
-Incoming request: GET /static/styles.css
-Outgoing response: 304 NOT MODIFIED
-Incoming request: GET /static/images/logo.png
-Outgoing response: 304 NOT MODIFIED
-Incoming request: GET /static/script.js
-Outgoing response: 304 NOT MODIFIED
-Incoming request: GET /static/images/favicon.ico
-Outgoing response: 304 NOT MODIFIED
+Incoming request: POST /query
+Processed query with convchain, result: {'type': 'text', 'content': "That sounds like an exciting enhancement to explore! Implementing the ability to browse the web through DuckDuckGo would indeed expand my capabilities and provide more valuable information to assist you better. If you have any specific questions or tasks in mind related to this new implementation, feel free to share, and I'll do my best to help you navigate through it! 🚀"}
+Outgoing response: 200 OK
+Incoming request: POST /query
+Processed query with convchain, result: {'type': 'text', 'content': "Absolutely! I'm well-versed in various tools and functionalities related to the crypto world. From fetching current prices and historical data to analyzing sentiment and market trends, I'm equipped to provide you with valuable insights and assistance in navigating the crypto landscape. If there's a particular tool or aspect you'd like to explore or learn more about, feel free to let me know, and I'll guide you through it! 🌟📈"}
+Outgoing response: 200 OK
+Incoming request: POST /query
+Processed query with convchain, result: {'type': 'text', 'content': "I have a variety of tools at my disposal to assist you in the crypto world. Here are some of the tools I can use:\n\n1. **Fetch Current Price:** Get the current price of a cryptocurrency in multiple currencies.\n2. **Fetch Historical Data:** Retrieve historical data for a specific cryptocurrency.\n3. **Fetch Top Volume Symbols:** Get the top cryptocurrencies by 24-hour trading volume.\n4. **Fetch CoinGecko Market Data:** Retrieve market data for a specified cryptocurrency using CoinGecko API.\n5. **Calculate MACD:** Calculate the Moving Average Convergence Divergence (MACD) for a cryptocurrency.\n6. **Analyze Crypto Sentiment:** Analyze market sentiment and social influence for a specific cryptocurrency.\n7. **Get Influential Crypto Assets:** Identify influential crypto assets based on social media data and market performance.\n8. **Fetch Latest Social Feeds:** Retrieve and analyze the latest social feeds for a specific cryptocurrency.\n9. **Fetch Reddit Data:** Get the latest posts from a specified subreddit category using PRAW.\n10. **Count Mentions:** Count how often a keyword is mentioned in a subreddit within a specified time period.\n11. **Analyze Sentiment:** Conduct sentiment analysis for posts and comments containing a specific keyword.\n12. **Search YouTube:** Search for videos matching a query on YouTube.\n13. **Fetch Asset Data:** Fetch detailed asset data for a specific cryptocurrency asset from Messari.\n14. **Fetch News Feed:** Get the latest news articles related to a specific cryptocurrency asset from Messari.\n15. **Fetch Research Reports:** Fetch the latest research reports for a specific cryptocurrency asset from Messari.\n16. **Fetch Asset Profile:** Fetch the asset profile for a specific cryptocurrency asset from Messari.\n17. **Fetch Historical Data (Messari):** Fetch historical data for a specific cryptocurrency asset from Messari.\n\nThese are just some of the tools I have in my toolkit! If you'd like to explore any specific tool or have a particular request, feel free to let me know. 🛠️📊"}
+Outgoing response: 200 OK
+Incoming request: POST /query
+Processed query with convchain, result: {'type': 'text', 'content': "That's great to hear that you're impressed with the tools available! If there's a particular tool or aspect you'd like to explore further or if you have any specific questions or requests related to the crypto market or any other topic, feel free to let me know. I'm here to assist you with any information or guidance you need. Let's continue our journey in the world of crypto together! 🌟🚀"}
+Outgoing response: 200 OK
+Incoming request: POST /query
+Processed query with convchain, result: {'type': 'text', 'content': "I'm here to assist you with any enhancements or modifications you'd like to make using the tools in my toolkit. Whether it's optimizing a specific tool, exploring a new feature, or diving deeper into a particular aspect of the crypto market, I'm ready to collaborate with you. Feel free to share your ideas or requirements, and together we can work on enhancing your experience in the crypto world! 🚀✨"}
+Outgoing response: 200 OK
+Incoming request: POST /query
+Processed query with convchain, result: {'type': 'text', 'content': "It looks like you're considering enhancing the interaction between us in the context of our conversations. We can focus on highlighting our collaborative efforts, the dynamic exchange of ideas, and the journey we embark on together in the crypto universe. This could involve emphasizing our partnership in exploring market trends, discussing strategies, and making improvements using the tools available.\n\nFeel free to share any specific ideas or preferences you have in mind for enhancing our interaction, and we can tailor the conversation template to reflect our collaborative spirit and shared goals. Let's continue to make our journey informative, engaging, and enjoyable! 🌟🚀"}
+Outgoing response: 200 OK
+Incoming request: POST /query
+Processed query with convchain, result: {'type': 'text', 'content': 'Absolutely! Here\'s a crafted system prompt for you to copy and paste into your codebase:\n\n```python\n("system", "Greetings, volcano! 🌋 I\'m Lenox, your AI companion in the crypto realm. Together, we can enhance our journey by delving into market insights, strategizing for success, and exploring new horizons. Whether you seek to optimize tools, uncover trends, or innovate in the crypto space, I\'m here to collaborate with you. Let\'s ignite our partnership and create a dynamic experience tailored to your needs. Ready to embark on this crypto adventure together? 🚀✨")\n```\n\nFeel free to use this prompt in your conversation template to reflect our collaborative spirit and shared goals. Let\'s make our journey in the crypto universe even more engaging and rewarding! 🌟🚀'}
+Outgoing response: 200 OK
+Incoming request: POST /query

@@ -184,4 +184,19 @@ def get_latest_news(asset_id: str) -> str:
         else:
             return "No latest news found."
     except Exception as e:
-        return f"Error fetching the latest news from Messari: {str(e)}"        
+        return f"Error fetching the latest news from Messari: {str(e)}"  
+    
+    
+@tool
+def display_tokenomics(symbol: str):
+    """
+    Fetches and displays tokenomics information.
+    """
+    tokenomics_api = f"https://api.messari.io/v1/assets/{symbol}/metrics"
+    response = requests.get(tokenomics_api)
+    tokenomics_data = response.json()
+    return {
+        "Circulating Supply": tokenomics_data['data']['market_data']['circulating_supply'],
+        "Total Supply": tokenomics_data['data']['market_data']['total_supply'],
+        "Max Supply": tokenomics_data['data']['market_data']['max_supply']
+    }          
