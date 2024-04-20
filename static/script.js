@@ -1,21 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
     const queryInput = document.getElementById('query');
-
-    // Keydown event for handling query submission
     queryInput.addEventListener('keydown', async (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault(); // Prevent default behavior for Enter key press without Shift.
-            await submitQuery(); // Call submitQuery only if Shift is not pressed.
+            e.preventDefault();
+            await submitQuery();
         }
     });
-
-    // Event listener for sending a message
     document.getElementById('sendButton').addEventListener('click', async () => {
-        await submitQuery(); // Use submitQuery function to handle the query submission.
+        await submitQuery();
     });
-
 });
-
 
 
 async function submitQuery() {
@@ -24,221 +18,185 @@ async function submitQuery() {
     if (!query) return;
 
     appendMessage(query, 'user-message');
-    queryInput.value = ''; // Clear the input field after getting the query
+    queryInput.value = '';
     showLoadingIndicator(true);
 
-    // Adjusted to include any phrase starting with "search the web for" or just "search:"
-    const endpoint = query.toLowerCase().includes("search the web for") || query.toLowerCase().includes("search:") ? '/web_search' : '/query';
-    console.log("Using endpoint:", endpoint);
-    const adjustedQuery = query.toLowerCase().replace("search the web for", "").replace("search:", "").trim();
+    // Determine the endpoint based on query content
+    let endpoint = '/query';  // Default endpoint for regular queries
+    let bodyPayload = { query: query };  // Default payload
+
+    if (query.toLowerCase().includes("search:")) {
+        endpoint = '/web_search';
+        bodyPayload = { query: query.replace("search:", "").trim(), detailed: true };
+    } else if (query.toLowerCase().includes("say:")) {
+        endpoint = '/synthesize';
+        const text = query.replace("say:", "").trim();
+        if (text === '') {
+            appendMessage('Please provide text for synthesis.', 'error-message');
+            showLoadingIndicator(false);
+            return;
+        }
+        bodyPayload = { text: text, language: 'en' };  // Explicitly set language for clarity
+    }
+
+    console.log("Using endpoint:", endpoint, "with payload:", bodyPayload);
 
     try {
         const response = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: adjustedQuery, detailed: endpoint === '/web_search' })
+            body: JSON.stringify(bodyPayload)
         });
 
         if (!response.ok) {
-            throw new Error(`Network response was not OK. Status: ${response.status}`);
+            throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
-        const data = await response.json();
-        processResponseData(data);
+        if (endpoint === '/synthesize') {
+            handleAudioResponse(response);  // Handle audio file response for TTS
+        } else {
+            const data = await response.json();
+            processResponseData(data);  // Process regular text or search data
+        }
     } catch (error) {
         console.error('Error fetching response:', error);
-        appendMessage('Ein Fehler ist aufgetreten.', 'error-message');
+        appendMessage(`An error occurred: ${error.message}`, 'error-message');
     } finally {
         showLoadingIndicator(false);
     }
 }
 
 
+function handleAudioResponse(response) {
+    response.blob().then(blob => {
+        const audioType = blob.type;
+        console.log('Received audio type:', audioType);
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audio.oncanplaythrough = () => audio.play();
+        audio.onerror = () => {
+            console.error('Error playing audio:', audio.error);
+            appendMessage('Error playing audio.', 'error-message');
+        };
+        appendMessage('Playing response...', 'bot-message');
+    }).catch(error => {
+        console.error('Error processing audio blob:', error);
+        appendMessage('Error processing audio.', 'error-message');
+    });
+}
 
 
-
-
-let visualizationCount = 0; // Global counter for visualization elements
-
-
-function handleWebSearchResults(data) {
-    if (data.results && Array.isArray(data.results)) {
-        data.results.forEach(result => {
-            appendMessage(result, 'bot-message');
-        });
-    } else {
-        console.error('Unexpected format for search results:', data);
-        appendMessage('Error displaying search results.', 'error-message');
-    }
+function fetchAudio(text) {
+    const data = { input: text, voice: "alloy" };  // Example setup, adjust as needed
+    fetch('/synthesize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    }).then(response => {
+        if (!response.ok) throw new Error(`Failed to fetch audio with status: ${response.status}`);
+        return response.blob();
+    }).then(blob => {
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audio.play();
+    }).catch(error => {
+        console.error('Error fetching or playing audio:', error);
+        appendMessage('Failed to play audio.', 'error-message');
+    });
 }
 
 
 
-async function processUserInput(query) {
-    if (!query) return;
 
-    appendMessage(query, 'user-message');
-    showLoadingIndicator(true);
-
-    try {
-        const action = interpretUserInput(query);
-        switch (action.type) {
-            case 'fetchData':
-                await fetchDataAndRespond(query);
-                break;
-            case 'adjustVisualization':
-                adjustVisualizationParameters(query);
-                break;
-            case 'directCommand':
-                executeDirectCommand(action.command);
-                break;
-            case 'complexQuery':
-                await handleComplexQuery(action.query);
-                break;
-            default:
-                appendMessage('Entschuldigung, ich habe das nicht verstanden.', 'bot-message');
-                break;
+function handleVisualResponse(data) {
+    const visualizationContainer = appendVisualizationContainer();
+    if (data.content && visualizationContainer) {
+        try {
+            const visualizationData = JSON.parse(data.content);
+            Plotly.newPlot(visualizationContainer, visualizationData.data, visualizationData.layout);
+        } catch (e) {
+            console.error('Error parsing visualization data:', e);
+            appendMessage('An error occurred while rendering the visualization.', 'error-message');
         }
-    } catch (error) {
-        console.error('Error processing user input:', error);
-        appendMessage('Ein Fehler ist bei der Verarbeitung Ihrer Eingabe aufgetreten.', 'error-message');
-    } finally {
-        showLoadingIndicator(false);
+    } else {
+        appendMessage('Visualization content is not available or container missing.', 'error-message');
     }
 }
-
-
-// Funktion zum Hochladen der Datei
-async function uploadDocument() {
-    const fileUpload = document.getElementById('fileUpload'); // Korrigiert 'fileInput' zu 'fileUpload'
-    if (!fileUpload.files.length) {
-        console.error('Keine Datei ausgewählt');
-        return;
-    }
-    const file = fileUpload.files[0];
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-        const response = await fetch('/upload', {
-            method: 'POST',
-            body: formData
-        });
-        // Handle response here if needed
-    } catch (error) {
-        console.error('Error uploading file:', error);
-    }
-} // Added missing closing brace here
-
-
-
 
 function appendVisualizationPlaceholder() {
     let chatMessages = document.getElementById('chat-messages');
     let visualizationPlaceholder = document.createElement('div');
-    visualizationPlaceholder.id = `visualization-placeholder-${visualizationCount++}`;
     visualizationPlaceholder.classList.add('visualization-placeholder', 'bot-message');
     chatMessages.appendChild(visualizationPlaceholder);
     return visualizationPlaceholder;
 }
 
-function interpretUserInput(input) {
-    if (input.toLowerCase().includes("visualisiere")) {
-        return { type: 'adjustVisualization' };
-    } else if (input.toLowerCase().startsWith("befehl:")) {
-        return { type: 'directCommand', command: input.slice(7).trim() };
-    } else if (input.toLowerCase().includes("analyse") || input.toLowerCase().includes("vergleiche")) {
-        return { type: 'complexQuery', query: input };
-    } else {
-        return { type: 'fetchData' };
-    }
-}
-
-
-async function fetchDataAndRespond(query) {
-    try {
-        const response = await fetch('/query', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query })
-        });
-
-        if (!response.ok) {
-            throw new Error(`Network response was not OK. Status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        processResponseData(data);
-    } catch (error) {
-        console.error('Error fetching response:', error);
-        appendMessage('Ein Fehler ist aufgetreten.', 'error-message');
-    } finally {
-        showLoadingIndicator(false);
-    }
-} 
 
 
 
-function adjustVisualizationParameters(query) {
-    appendMessage(`Visualisierungsparameter für "${query}" angepasst.`, 'bot-message');
-    // Implement logic for adjusting visualization parameters based on the query
-}
-
-function executeDirectCommand(command) {
-    appendMessage(`Direkter Befehl "${command}" ausgeführt.`, 'bot-message');
-    // Implement logic for executing direct commands based on the command
-}
-
-async function handleComplexQuery(query) {
-    appendMessage(`Komplexe Anfrage "${query}" wird verarbeitet. Bitte warten...`, 'bot-message');
-    // Implement logic for handling complex queries, possibly involving specialized API endpoints
-}
-
-
-function processResponseData(data) {
-    if (data.type === 'visual') {
-        const visualizationContainer = appendVisualizationPlaceholder();
-        if (visualizationContainer && data.content) {
-            try {
-                const visualizationData = JSON.parse(data.content);
-                Plotly.newPlot(visualizationContainer, visualizationData.data, visualizationData.layout);
-            } catch (e) {
-                console.error('Error parsing visualization data:', e);
-                appendMessage('An error occurred while rendering the visualization.', 'error-message');
-            }
-        } else {
-            console.error('Visualization container not found or data.content is null');
-            appendMessage('Visualization content is not available.', 'error-message');
-        }
-    } else if (data.type === 'text') {
-        appendMessage(data.content, 'bot-message');
-    } else if (data.type === 'error') {
-        console.error('Error response received:', data.content);
-        appendMessage(data.content, 'error-message');
-    } else if (data.type === 'search_results') { // Added condition for handling search results
-        handleWebSearchResults(data); // Call the function to handle search results
-    } else {
-        console.error('Unexpected response type:', data.type);
-    }
-}
-
-
-function appendMessage(message, className) {
+function appendMessage(message, className, shouldIncludeAudio = false) {
     const chatMessages = document.getElementById('chat-messages');
     const messageDiv = document.createElement('div');
     messageDiv.classList.add(className);
-    // Konvertiere URLs in anklickbare Links
-    const convertedMessage = convertUrlsToLinks(message);
-    messageDiv.innerHTML = convertedMessage;
+    
+    // Convert URLs to clickable links and set as innerHTML for link functionality
+    message = convertUrlsToLinks(message);
+    messageDiv.innerHTML = message;
+
+    if (shouldIncludeAudio && className === 'bot-message') {
+        const button = document.createElement('button');
+        button.textContent = 'Play';
+        button.onclick = () => fetchAudio(message);
+        messageDiv.appendChild(button); // Append button to the message div
+    }
+
     chatMessages.appendChild(messageDiv);
     scrollToLatestMessage();
 }
 
+function processResponseData(data) {
+    console.log("Received data from server:", data);
+    switch (data.type) {
+        case 'visual':
+            // Corrected to use appendVisualizationPlaceholder
+            const visualizationPlaceholder = appendVisualizationPlaceholder();
+            if (visualizationPlaceholder && data.content) {
+                try {
+                    const visualizationData = JSON.parse(data.content);
+                    Plotly.newPlot(visualizationPlaceholder, visualizationData.data, visualizationData.layout);
+                } catch (e) {
+                    console.error('Error parsing visualization data:', e);
+                    appendMessage('An error occurred while rendering the visualization.', 'error-message');
+                }
+            } else {
+                console.error('Visualization container not found or data.content is null');
+                appendMessage('Visualization content is not available.', 'error-message');
+            }
+            break;
+        case 'text':
+            appendMessage(data.content, 'bot-message', true); // true indicates that audio play button should be included
+            break;
+        case 'error':
+            console.error('Error response received:', data.content);
+            appendMessage(data.content, 'error-message');
+            break;
+        default:
+            console.error('Unexpected response type:', data.type);
+            appendMessage('Received unexpected type of data from the server.', 'error-message');
+            break;
+    }
+}
+
+
+function playAudio(audioUrl) {
+    const audio = new Audio(audioUrl);
+    audio.play().catch(error => console.error('Error playing audio:', error));
+}
+
+
 function convertUrlsToLinks(text) {
     const urlRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
-    return text.replace(urlRegex, function(url) {
-        return '<a href="' + url + '" target="_blank">' + url + '</a>';
-    });
+    return text.replace(urlRegex, url => `<a href="${url}" target="_blank">${url}</a>`);
 }
 
 function scrollToLatestMessage() {
@@ -246,33 +204,9 @@ function scrollToLatestMessage() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-
-
-function renderVisualization(data, placeholderId) {
-    let visualizationPlaceholder = document.getElementById(placeholderId);
-    visualizationPlaceholder.style.display = 'block';
-
-    if (data.error) {
-        console.error('Visualization error:', data.error);
-        appendMessage(data.error, 'error-message');
-        return;
-    }
-
-    Plotly.newPlot(visualizationPlaceholder, data.data, data.layout).catch(error => {
-        console.error('Plotly rendering error:', error);
-        appendMessage('An error occurred while rendering the visualization.', 'error-message');
-    });
-}
-
-
-
 function showLoadingIndicator(isLoading) {
     const loadingIndicator = document.getElementById('loadingIndicator');
-    if (loadingIndicator) {
-        if (isLoading) {
-            loadingIndicator.style.display = 'block';
-        } else {
-            loadingIndicator.style.display = 'none';
-        }
-    } 
-} 
+    loadingIndicator.style.display = isLoading ? 'block' : 'none';
+}
+
+  

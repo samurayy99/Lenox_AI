@@ -1,8 +1,10 @@
 import json
+import logging
 from sqlalchemy import Column, Integer, Text, create_engine, func
 from sqlalchemy.orm import declarative_base, sessionmaker
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import BaseMessage, message_to_dict, messages_from_dict
+from typing import Any, Dict, List, Union, Optional
 
 Base = declarative_base()
 
@@ -23,20 +25,29 @@ class SQLChatMessageHistory(BaseChatMessageHistory):
         self.Session = sessionmaker(bind=self.engine)
 
     def add_message(self, message: BaseMessage) -> None:
-        with self.Session() as session:
-            db_message = Message(session_id=self.session_id, message=json.dumps(message_to_dict(message)))
-            session.add(db_message)
-            session.commit()
+        try:
+            with self.Session() as session:
+                db_message = Message(session_id=self.session_id, message=json.dumps(message_to_dict(message)))
+                session.add(db_message)
+                session.commit()
+            logging.debug(f"Message added successfully: {message}")
+        except Exception as e:
+            logging.error(f"Failed to add message: {e}")
 
-    def messages(self, limit: int = 100) -> list:
-        with self.Session() as session:
-            # Here we add the limit argument to the query
-            db_messages = session.query(Message)\
-                .filter(Message.session_id == self.session_id)\
-                .order_by(Message.id.desc())\
-                .limit(limit).all()
-            db_messages.reverse()  # Reverse the list to get messages in chronological order
-            return [messages_from_dict([json.loads(db_message.message)])[0] for db_message in db_messages]
+    def messages(self, limit: int = 15) -> List[BaseMessage]:
+        try:
+            with self.Session() as session:
+                db_messages = session.query(Message).filter(
+                    Message.session_id == self.session_id
+                ).order_by(Message.id.desc()).limit(limit).all()
+                db_messages.reverse()
+                messages = [messages_from_dict([json.loads(db_message.message)])[0] for db_message in db_messages]
+                logging.debug(f"Retrieved messages: {messages}")
+                return messages
+        except Exception as e:
+            logging.error(f"Failed to retrieve messages: {e}")
+            return []
+
 
     def clear(self) -> None:
         with self.Session() as session:

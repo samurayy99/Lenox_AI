@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, send_file, send_from_directory
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 import os
@@ -11,11 +11,15 @@ from prompts import PromptEngine
 from langchain_community.tools import DuckDuckGoSearchRun, DuckDuckGoSearchResults
 from tool_imports import import_tools
 from datetime import datetime
+import numpy as np
+import openai
+
 
 
 # Load environment variables
 load_dotenv()
 app = Flask(__name__)
+openai_api_key = os.getenv('OPENAI_API_KEY')
 CORS(app)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'my_secret_key')
 socketio = SocketIO(app)
@@ -26,12 +30,20 @@ handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=1)
 handler.setLevel(logging.DEBUG)
 app.logger.addHandler(handler)
 
-# Initialize components
-document_handler = DocumentHandler(document_folder="documents", data_folder="data")
+# Import tools before they are used
 tools = import_tools()
+
+
+
+# Create instances of your components
+document_handler = DocumentHandler(document_folder="documents", data_folder="data")
 prompt_engine = PromptEngine(context_length=5, max_tokens=2048, tools=tools, model_name="gpt-3.5-turbo-0125")
-# Pass app.logger to Lenox class
-lenox = Lenox(tools=tools, document_handler=document_handler, prompt_engine=prompt_engine, logger=app.logger)
+duckduckgo_search = DuckDuckGoSearchResults()
+
+# Initialize Lenox with all necessary components using keyword arguments
+lenox = Lenox(tools=tools, document_handler=document_handler, prompt_engine=prompt_engine, duckduckgo_search=duckduckgo_search, openai_api_key=openai_api_key)
+
+
 
 
 @app.before_request
@@ -49,19 +61,55 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/audio/<filename>')
+def serve_audio(filename):
+    return send_from_directory('path_to_audio_files_directory', filename)
+
+
+
+@app.route('/synthesize', methods=['POST'])
+def synthesize_speech():
+    data = request.get_json()
+    input_text = data.get('input')
+    voice = data.get('voice', 'onyx')  # Default to 'alloy' if not specified
+    model = data.get('model', 'tts-1-hd')  # Default to 'tts-1' if not specified
+
+    if not input_text:
+        return jsonify({'error': 'Input text is missing'}), 400
+
+    try:
+        audio_path = lenox.synthesize_text(model, input_text, voice)
+        if audio_path:
+            directory = os.path.dirname(audio_path)
+            filename = os.path.basename(audio_path)
+            return send_from_directory(directory=directory, path=filename, as_attachment=True)
+        else:
+            return jsonify({'error': 'Failed to generate audio'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
+
+
 @app.route('/query', methods=['POST'])
 def handle_query():
-    data = request.get_json()
-    query = data.get('query', '').lower()  # Normalize the input to lower case
+    try:
+        data = request.get_json()
+        query = data.get('query', '').lower()  # Normalize the input to lower case
 
-    if not query:
-        app.logger.debug("No query provided in the request.")
-        return jsonify({'error': 'Empty query.'}), 400
+        if not query:
+            app.logger.debug("No query provided in the request.")
+            return jsonify({'error': 'Empty query.'}), 400
 
-    # Process the query through Lenox's convchain
-    result = lenox.convchain(query, session['session_id'])
-    app.logger.debug(f"Processed query with convchain, result: {result}")
-    return jsonify(result)
+        # Process the query through Lenox's convchain
+        result = lenox.convchain(query, session['session_id'])
+        app.logger.debug(f"Processed query with convchain, result: {result}")
+        return jsonify(result)
+    except Exception as e:
+        app.logger.error(f"Error processing request: {str(e)}")
+        return jsonify({'error': 'Failed to process request.'}), 500
+
 
 
 @app.route('/feedback', methods=['POST'])
@@ -69,26 +117,21 @@ def handle_feedback():
     feedback_data = request.get_json()
     if 'feedback' not in feedback_data:
         return jsonify({'error': 'Missing feedback data.'}), 400
-    lenox.process_feedback(feedback_data['feedback'], session['session_id'])
+
+    session_id = session.get('session_id')  # Ensure session_id is correctly retrieved
+    lenox.process_feedback(feedback_data['feedback'], session_id)
     return jsonify({'message': 'Thank you for your feedback!'})
 
- 
-@app.route('/web_search', methods=['POST'])
-def handle_web_search():
-    data = request.get_json() if request.data else {'query': data.get('query'), 'detailed': False}  # Fallback if called internally
 
-    query = data.get('query', '')
-    detailed = data.get('detailed', False)
-    app.logger.debug(f"Handling web search for query: {query} with detail: {detailed}")
 
+@app.route('/search', methods=['POST'])
+def search():
+    query = request.json.get('query')
     if not query:
-        return jsonify({'error': 'Empty search query.'}), 400
-
-    # Execute the search
-    search_results = lenox.perform_web_search(query, detailed)
+        return jsonify({'error': 'Empty query.'}), 400
+    search_results = duckduckgo_search.run(query)
     app.logger.debug(f"Search results: {search_results}")
-    
-    return jsonify({'results': search_results})
+    return jsonify({'type': 'search_results', 'results': search_results})
 
 
 

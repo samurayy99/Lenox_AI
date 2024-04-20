@@ -1,61 +1,79 @@
-import spacy
-from collections import Counter
-import openai
 import logging
-from textblob import TextBlob
 from datetime import datetime
-from typing import Any, List, Dict
-from utils import AIMessage, HumanMessage  # Correct import based on your project structure
-import json
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.neighbors import NearestNeighbors
+from typing import List, Dict, Any
+from langchain_community.tools import DuckDuckGoSearchRun
 
 class PromptEngine:
-    def __init__(self, context_length: int = 10, max_tokens: int = 4096, tools=None, model_name: str = "gpt-3.5-turbo-0125", nlp_model: str = "en_core_web_sm"):
+    """
+    An advanced prompt engine designed to dynamically manage conversational context, utilize external tools,
+    and provide context-aware, intelligent responses. This engine integrates a direct search capability,
+    handles different types of queries, and customizes prompts to enhance interaction with a ChatGPT-like model.
+    """
+
+    def __init__(self, tools, model_name: str, context_length: int = 10, max_tokens: int = 4096):
+        """
+        Initializes the PromptEngine with settings to handle detailed conversational contexts.
+
+        :param tools: A dictionary of tools for data retrieval and external functionalities.
+        :param model_name: The name of the AI model used for generating responses.
+        :param context_length: Number of context messages to consider for creating prompts.
+        :param max_tokens: Maximum number of tokens allowed in the prompt.
+        """
         self.context_length = context_length
         self.max_tokens = max_tokens
-        self.tools = tools or {}
+        self.tools = tools
         self.model_name = model_name
-        self.nlp = spacy.load(nlp_model)
-        self.vectorizer = TfidfVectorizer()
-        self.model_knn = NearestNeighbors(n_neighbors=1, algorithm='auto')
+        self.search_tool = DuckDuckGoSearchRun()  # Initialize the search tool
+        logging.basicConfig(level=logging.INFO)
 
-    def generate_prompt(self, user_query: str, context_messages: list, parsed_data: dict) -> str:
-        context = " ".join([msg.content for msg in context_messages[-self.context_length:]]) if context_messages else "How may I assist you today?"
-        entities = ', '.join([f"{ent[0]} ({ent[1]})" for ent in parsed_data['entities']])
-        keywords = ', '.join(parsed_data['keywords'])
-        sentiment = self.calculate_sentiment(context)
+    def classify_intent(self, user_query: str) -> str:
+        """
+        Determines the user's intent to tailor the response strategy, integrating search directly when needed.
+        """
+        if any(keyword in user_query.lower() for keyword in ["search", "find", "latest news", "update"]):
+            return "search"
+        if "visualize" in user_query.lower() or "chart" in user_query.lower():
+            return "visualization"
+        if any(keyword in user_query.lower() for keyword in ["help", "support", "how do I", "what is"]):
+            return "informational"
+        return "general"
 
-        prompt = f"Context: {context}\nSentiment: {sentiment}\nRecognized entities: {entities}\nKey terms: {keywords}\n\n🤖: What specific assistance can I provide regarding '{user_query}'?\n👤: "
+    def generate_prompt(self, user_query: str, context_messages: List[Dict[str, Any]]) -> str:
+        """
+        Generates a dynamic prompt based on the user's query and historical context, tailoring the prompt
+        for the AI model based on detected intent and user interaction history.
+        """
+        intent = self.classify_intent(user_query)
+        context_text = " ".join(msg['content'] for msg in context_messages[-self.context_length:])
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        if intent == "search":
+            search_results = self.search_tool.run(user_query)
+            prompt = f"{now} | Context: {context_text}\nSearch Results: {search_results}\nAI: What more would you like to know about this?"
+        elif intent == "visualization":
+            prompt = f"{now} | Context: {context_text}\nAI: Let's create a visualization based on your request."
+        else:
+            prompt = f"{now} | Context: {context_text}\nAI: How can I assist you further with '{user_query}'?"
+
         return prompt
 
-    def calculate_sentiment(self, text):
-        blob = TextBlob(text)
-        return blob.sentiment.polarity
+    def update_tools(self, new_tools: Dict[str, Any]):
+        """
+        Updates the toolset of the PromptEngine to enhance its capabilities.
+        """
+        self.tools.update(new_tools)
+        logging.info("Tools updated successfully.")
 
-    def select_tool(self, query: str) -> str:
-        query_vec = self.vectorizer.transform([query])
-        _, indices = self.model_knn.kneighbors(query_vec)
-        return self.tools[indices[0][0]]
+    def process_query(self, user_query: str, context_messages: List[Dict[str, Any]]) -> str:
+        """
+        Processes the user query by generating a dynamic prompt and invoking the AI model to get a response.
+        """
+        prompt = self.generate_prompt(user_query, context_messages)
+        return self.invoke_ai_model(prompt)
 
-    def generate_dynamic_prompt(self, user_query: str, context_messages: list) -> str:
-        context = " ".join([msg.content for msg in context_messages])
-        tool_key = self.select_tool(context + " " + user_query)
-        prompt = f"Latest Interaction: {context}\nSelected Tool: {tool_key}\n🧐 Let's explore your query further: {user_query}\nHow can we refine your request?"
-        return prompt
-
-    def train_context_model(self, dataset: List[str]):
-        X = self.vectorizer.fit_transform(dataset)
-        self.model_knn.fit(X)
-        
-    def update_feedback_based_on_result(self, session_id: str, feedback: Any) -> None:
-        # Your code to update feedback here
-        print("Feedback has been updated based on results.")
-    
-
-    def handle_user_interaction(self, query: str, session_id: str, feedback: Any):
-        # Process query and feedback, dynamically adapt future interactions
-        context_messages = self.retrieve_context(session_id)  # Assume a method to retrieve past messages
-        prompt = self.generate_dynamic_prompt(query, context_messages)
-        self.update_feedback_based_on_result(session_id, feedback)  # Corrected method call
-        return prompt
+    def invoke_ai_model(self, prompt: str) -> str:
+        """
+        Simulates invoking an AI model with the dynamically generated prompt. Replace this with actual API calls.
+        """
+        logging.info(f"Invoking AI model with prompt: {prompt}")
+        return "This is a simulated response based on the prompt."

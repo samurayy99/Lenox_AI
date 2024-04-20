@@ -5,7 +5,8 @@ from reddit_tools import get_reddit_data, count_mentions, analyze_sentiment, fin
 from cryptocompare_tools import get_current_price, get_historical_daily, get_top_volume_symbols
 from coingecko_tools import get_coingecko_market_data, get_macd, get_trending_coins, get_public_companies_holdings
 from youtube_tools import search_youtube, process_youtube_video, query_youtube_video
-from coinpaprika_tools import get_coin_details, get_tags, search_coinpaprika  
+from coinpaprika_tools import get_coin_details, get_tags, search_coinpaprika 
+
 
 def import_tools():
     return [
