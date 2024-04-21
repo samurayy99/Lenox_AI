@@ -1,18 +1,104 @@
-Processed query with convchain, result: {'type': 'text', 'content': "[snippet: Istanbul Coffee Festival (annual, September) 2024 dates not announced yet. Istanbul's Coffee Festival is about 4 days long kind of a carnival, bringing coffee from all over the world to the coffee-lovers' taste. The festival is held in the KüçükÇiftlik Park venue, located in Macka, close to Taksim., title: Top Festivals & Events in Istanbul (2024 Calendar, Venues, Prices), link: https://istanbeautiful.com/top-festivals-and-events-in-istanbul/], [snippet: Mon 05 Aug 2024 % 100 Metal Sunar: Freedoom Festival - Jinjer 2024 Istanbul, Turkey Joker Out Sat 10 Aug 2024 Maximum Uniq Açıkhava Istanbul, Turkey, title: Istanbul in 2024 | Concerts, Festivals, Tickets & Tour Dates - Songkick, link: https://www.songkick.com/metro-areas/32463-turkey-istanbul/2024], [snippet: The Hıdrellez Festival is one of the most popular festivals in Istanbul and takes place every spring. The festival celebrates spring's arrival and commemorates the meeting of two gods, Hızır and İlyas. During the festival, there are stalls selling traditional Turkish food and drink, as well as live music and dancing. 20., title: Top 23 Must-Visit Istanbul Festivals In 2024: Ultimate Events Guide, link: https://www.chasingthedonkey.com/best-festivals-in-istanbul-festivals/], [snippet: Mon 05 Aug 2024 % 100 Metal Sunar: Freedoom Festival - Jinjer 2024 Istanbul, Turkey John Surman Wed 12 Jun 2024 CRR Konser Salonu Istanbul, Turkey, title: Istanbul Concerts, Festivals, Tickets & Tour Dates 2024 & 2025 - Songkick, link: https://www.songkick.com/metro-areas/32463-turkey-istanbul]"}
+Exception on /upload [POST]
+Traceback (most recent call last):
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 1463, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 872, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask_cors/extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 870, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/venv-lenox27/lib/python3.11/site-packages/flask/app.py", line 855, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lenox27/LENOX/main.py", line 85, in upload_document
+    if not allowed_file(file.filename):
+           ^^^^^^^^^^^^
+NameError: name 'allowed_file' is not defined
+Outgoing response: 500 INTERNAL SERVER ERROR
+Incoming request: GET /
+Outgoing response: 200 OK
+Incoming request: GET /static/styles.css
+Incoming request: GET /static/images/logo.png
+Incoming request: GET /static/script.js
+Outgoing response: 304 NOT MODIFIED
+Outgoing response: 304 NOT MODIFIED
+Outgoing response: 304 NOT MODIFIED
+Incoming request: GET /static/images/favicon.ico
+Outgoing response: 304 NOT MODIFIED
+Incoming request: POST /query
+Processed query with convchain, result: {'type': 'text', 'content': 'Hello! How can I assist you today? If you have any questions or need help with something, feel free to let me know!'}
+Outgoing response: 200 OK
+Incoming request: POST /upload
+Session data before upload: <SecureCookieSession {'session_id': '7ebb15fe5219f0404f0c199bf9ba00a29ec3feb3ae7d4a94'}>
+File successfully uploaded
 Outgoing response: 200 OK
 Incoming request: POST /query
-Processed query with convchain, result: {'type': 'text', 'content': 'In der Schweiz gibt es eine Vielzahl von Weiterbildungsmöglichkeiten im Bereich Kommunikation. Hier sind einige der gängigen Optionen für Weiterbildungen in Kommunikation:\n\n1. **Weiterbildung in Kommunikation und Public Relations**: Verschiedene Institutionen und Hochschulen bieten Kurse und Programme an, die sich auf Kommunikation, Public Relations, Medienarbeit und Öffentlichkeitsarbeit konzentrieren.\n\n2. **CAS/DAS/MAS in Unternehmenskommunikation**: Certificate of Advanced Studies (CAS), Diploma of Advanced Studies (DAS) und Master of Advanced Studies (MAS) Programme in Unternehmenskommunikation sind spezialisierte Weiterbildungen, die vertiefte Kenntnisse in Kommunikationsstrategien, Krisenkommunikation, Medienmanagement usw. vermitteln.\n\n3. **Weiterbildung in Marketingkommunikation**: Kurse und Seminare, die sich auf Marketingkommunikation, Werbung, Markenführung und digitales Marketing konzentrieren.\n\n4. **Journalismus und Medien**: Weiterbildungen im Bereich Journalismus, Medienproduktion, Medienethik und Medienmanagement.\n\n5. **Interkulturelle Kommunikation**: Programme, die sich auf interkulturelle Kommunikation, Diversity Management und globale Kommunikation spezialisieren.\n\n6. **Kommunikationstraining und Rhetorikkurse**: Praktische Kurse und Workshops, die die kommunikativen Fähigkeiten, Präsentationstechniken und Rhetorik verbessern.\n\nEs ist ratsam, die Websites von Universitäten, Fachhochschulen, Weiterbildungsinstitutionen und Kommunikationsverbänden in der Schweiz zu besuchen, um Informationen über aktuelle Weiterbildungsangebote und Kurse zu erhalten. Je nach Ihren Interessen und beruflichen Zielen können Sie das für Sie passende Weiterbildungsprogramm auswählen.'}
+Processed query with convchain, result: {'type': 'text', 'content': 'I currently do not have direct access to specific files or documents like "slack_docs" to provide a summary. If you can provide me with the content or key points from the "slack_docs" document that you\'d like me to summarize, I\'d be happy to assist you in summarizing the information or providing insights based on the content you provide. Feel free to share the details you\'d like summarized from the "slack_docs" document.'}
 Outgoing response: 200 OK
-Incoming request: POST /synthesize
+Incoming request: GET /
+Outgoing response: 200 OK
+Incoming request: GET /static/styles.css
+Incoming request: GET /static/images/logo.png
+Incoming request: GET /static/script.js
+Outgoing response: 304 NOT MODIFIED
+Outgoing response: 304 NOT MODIFIED
+Outgoing response: 304 NOT MODIFIED
+Incoming request: GET /static/images/favicon.ico
+Outgoing response: 304 NOT MODIFIED
+Incoming request: POST /query
+Processed query with convchain, result: {'type': 'text', 'content': 'Hello! How can I assist you today? If you have any questions or need help with something, feel free to let me know!'}
+Outgoing response: 200 OK
+Incoming request: POST /upload
+Session data before upload: <SecureCookieSession {'session_id': '7ebb15fe5219f0404f0c199bf9ba00a29ec3feb3ae7d4a94'}>
+Outgoing response: 400 BAD REQUEST
+Incoming request: GET /
+Outgoing response: 200 OK
+Incoming request: GET /static/styles.css
+Incoming request: GET /static/images/logo.png
+Outgoing response: 304 NOT MODIFIED
+Outgoing response: 304 NOT MODIFIED
+Incoming request: GET /static/script.js
+Outgoing response: 200 OK
+Incoming request: GET /static/images/favicon.ico
+Outgoing response: 304 NOT MODIFIED
+Incoming request: GET /
+Outgoing response: 200 OK
+Incoming request: GET /static/styles.css
+Incoming request: GET /static/script.js
+Outgoing response: 200 OK
+Outgoing response: 304 NOT MODIFIED
+Incoming request: GET /static/images/logo.png
+Outgoing response: 304 NOT MODIFIED
+Incoming request: GET /static/images/favicon.ico
+Outgoing response: 304 NOT MODIFIED
+Incoming request: POST /query
+Processed query with convchain, result: {'type': 'text', 'content': 'Hey there! How can I assist you today? If you have any questions or need help with something, feel free to let me know!'}
 Outgoing response: 200 OK
 Incoming request: POST /query
-Processed query with convchain, result: {'type': 'text', 'content': 'Als persönlicher digitaler Assistent bin ich darauf spezialisiert, Ihnen bei einer Vielzahl von Themen und Anliegen zu helfen, indem ich maßgeschneiderte Antworten und Unterstützung biete. Im Vergleich zu einem allgemeinen Chatbot wie dem GPT-4-Modell zeichne ich mich durch folgende Merkmale aus:\n\n1. **Spezialisierung und Fokus**: Ich bin darauf ausgerichtet, Ihnen in spezifischen Bereichen wie Kryptowährungen, Finanzen, Bildung, Unterhaltung und mehr zu helfen, während ein allgemeiner Chatbot wie GPT-4 ein breiteres Spektrum abdeckt.\n\n2. **Interaktive Unterstützung**: Ich kann interaktive Tools und Funktionen nutzen, um Ihnen besser zu dienen, z. B. das Abrufen von Echtzeitdaten, das Analysieren von Sentiments, das Suchen nach spezifischen Informationen und vieles mehr.\n\n3. **Persönlicher Ansatz**: Ich bin darauf ausgerichtet, eine persönliche und ansprechende Interaktion mit Ihnen zu haben, um Ihre Bedürfnisse und Anliegen bestmöglich zu erfüllen.\n\n4. **Fachwissen und Recherche**: Ich greife auf Fachwissen und Datenbanken zu, um fundierte Antworten und Empfehlungen bereitzustellen, insbesondere in komplexen Themenbereichen.\n\n5. **Kontinuierliche Verbesserung**: Durch kontinuierliches Training und Aktualisierung meiner Fähigkeiten strebe ich danach, Ihnen stets die bestmögliche Unterstützung zu bieten.\n\nWährend GPT-4 ein leistungsstarkes allgemeines Sprachmodell ist, das eine Vielzahl von Aufgaben bewältigen kann, bin ich darauf ausgerichtet, Ihnen auf spezifische und personalisierte Weise zu dienen. Wenn Sie also maßgeschneiderte Hilfe und Beratung benötigen, stehe ich Ihnen gerne zur Verfügung!'}
+Processed query with convchain, result: {'type': 'text', 'content': 'I currently don\'t have access to external files for summarization. If you can provide the content or key points from the "togetherai_docs.txt" file, I\'d be happy to help summarize it for you. Let me know how I can assist you further!'}
 Outgoing response: 200 OK
-Incoming request: POST /synthesize
+Incoming request: GET /
+Outgoing response: 200 OK
+Incoming request: GET /static/styles.css
+Incoming request: GET /static/images/logo.png
+Incoming request: GET /static/script.js
+Outgoing response: 304 NOT MODIFIED
+Outgoing response: 304 NOT MODIFIED
+Outgoing response: 304 NOT MODIFIED
+Incoming request: GET /static/images/favicon.ico
+Outgoing response: 304 NOT MODIFIED
+Incoming request: POST /query
+Processed query with convchain, result: {'type': 'text', 'content': 'TogetherAI is an AI-powered platform that offers a wide range of features and capabilities to enhance collaboration, communication, and productivity in various settings. Here are some key aspects of TogetherAI:\n\n1. **Collaboration Tools**: TogetherAI provides tools for team collaboration, project management, and communication. It enables seamless interaction among team members, facilitating efficient workflows and coordination.\n\n2. **AI-Powered Insights**: The platform leverages artificial intelligence to provide valuable insights and analytics. It can analyze data, patterns, and trends to help users make informed decisions and improve performance.\n\n3. **Virtual Assistance**: TogetherAI offers virtual assistant capabilities to streamline tasks, manage schedules, and assist users in various activities. The virtual assistant can provide support, reminders, and information as needed.\n\n4. **Integration with Existing Tools**: The platform integrates with a variety of existing tools and services to enhance functionality and connectivity. This integration allows users to access information from multiple sources within the TogetherAI environment.\n\n5. **Customization and Personalization**: Users can customize their experience on TogetherAI based on their preferences and needs. Personalization options help tailor the platform to individual requirements, making it more user-friendly and efficient.\n\n6. **Security and Privacy**: TogetherAI prioritizes security and privacy, ensuring that user data is protected and confidential. The platform implements measures to safeguard information and maintain a secure environment for collaboration.\n\nOverall, TogetherAI aims to empower users with AI-driven capabilities to foster collaboration, enhance productivity, and optimize workflows in a digital workspace. It serves as a comprehensive solution for teams and individuals looking to leverage technology for improved communication and efficiency.'}
 Outgoing response: 200 OK
 Incoming request: POST /query
-Processed query with convchain, result: {'type': 'text', 'content': 'Natürlich! Hier ist ein einfaches Rezept für Saksuka, ein köstliches türkisches Gericht:\n\n### Zutaten:\n- 2 Auberginen\n- 2 Zwiebeln\n- 3 Tomaten\n- 2 Knoblauchzehen\n- Olivenöl\n- Salz und Pfeffer\n- Paprikapulver\n- Petersilie (optional)\n- Zitronensaft (optional)\n\n### Zubereitung:\n1. Auberginen waschen und in kleine Würfel schneiden. Mit etwas Salz bestreuen und für etwa 20 Minuten ruhen lassen, um die Bitterstoffe zu entfernen. Danach abspülen und trocken tupfen.\n   \n2. In einer Pfanne etwas Olivenöl erhitzen und die Auberginenwürfel goldbraun anbraten. Herausnehmen und beiseite stellen.\n\n3. Zwiebeln und Knoblauch fein hacken und in derselben Pfanne glasig dünsten.\n\n4. Tomaten grob würfeln und zu den Zwiebeln geben. Einige Minuten köcheln lassen, bis die Tomaten weich sind.\n\n5. Die gebratenen Auberginen wieder hinzufügen und alles gut vermengen. Mit Salz, Pfeffer und Paprikapulver würzen.\n\n6. Nach Belieben mit gehackter Petersilie und einem Spritzer Zitronensaft verfeinern.\n\n7. Das Saksuka warm servieren und mit Fladenbrot oder Reis genießen.\n\nDas war das Grundrezept für Saksuka. Sie können es nach Ihrem Geschmack anpassen und mit weiteren Gewürzen oder Zutaten ergänzen. Guten Appetit! Wenn Sie noch weitere Fragen haben oder ein anderes Rezept benötigen, lassen Sie es mich wissen.'}
+Processed query with convchain, result: {'type': 'text', 'content': '"Slack_docs" could refer to a specific feature, functionality, or documentation related to the integration of Slack, a popular team communication and collaboration platform. Here are some aspects that "Slack_docs" might encompass:\n\n1. **Document Sharing**: Slack allows users to share documents, files, and other resources within channels or direct messages. "Slack_docs" could refer to the documentation shared through Slack for reference or collaboration purposes.\n\n2. **Collaborative Editing**: Slack integrates with various document editing tools like Google Docs, Dropbox Paper, or Microsoft Office, enabling real-time collaboration on documents. "Slack_docs" could involve collaborative editing and feedback on shared documents.\n\n3. **File Management**: Slack provides a centralized location for storing and accessing files shared within conversations. "Slack_docs" might involve organizing and managing documents effectively within Slack for easy retrieval.\n\n4. **Document Versioning**: Some Slack integrations offer version control for documents shared in conversations. "Slack_docs" could include features related to tracking document versions and changes over time.\n\n5. **Document Search**: Slack\'s search functionality allows users to quickly find specific documents or information shared in conversations. "Slack_docs" might involve searching for and retrieving relevant documents efficiently.\n\n6. **Document Collaboration Tools**: Slack offers integrations with various productivity tools that enhance document collaboration, such as task management apps, project management tools, and note-taking applications. "Slack_docs" could encompass using these tools within Slack for seamless collaboration.\n\nIf you have a specific context or use case in mind regarding "Slack_docs," feel free to provide more details so I can offer a more tailored explanation or assistance.'}
 Outgoing response: 200 OK
-Incoming request: POST /synthesize
+Incoming request: POST /query
+Processed query with convchain, result: {'type': 'text', 'content': 'It seems like "openbb_docs" is a term or topic that I\'m not familiar with. If "openbb_docs" refers to a specific platform, software, project, or documentation related to OpenBB, please provide more context or details so that I can offer you a more accurate explanation or assistance. Feel free to share additional information about OpenBB or "openbb_docs" so I can provide you with the information you\'re looking for.'}
 Outgoing response: 200 OK
 Incoming request: POST /query

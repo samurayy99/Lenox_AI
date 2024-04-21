@@ -2,69 +2,98 @@ document.addEventListener('DOMContentLoaded', () => {
     const queryInput = document.getElementById('query');
     queryInput.addEventListener('keydown', async (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            await submitQuery();
+            e.preventDefault(); // Prevent the default Enter key behavior.
+            await submitQuery(); // Call the function to submit the query via AJAX.
+        }
+        // No else branch is needed if Shift+Enter is not intended to do anything special.
+    });
+
+    const uploadForm = document.getElementById('uploadForm');
+    uploadForm.addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent the traditional form submission.
+
+        const fileInput = document.getElementById('fileUpload');
+        const formData = new FormData();
+
+        // Ensure a file is selected for upload.
+        if (fileInput.files.length > 0) {
+            formData.append('file', fileInput.files[0]); // Append the file to the FormData object.
+
+            // Make a POST request to the server to upload the file.
+            fetch('/upload', {
+                method: 'POST',
+                body: formData, // FormData will set the correct multipart content type header.
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            }).then(data => {
+                // Handle the successful response here.
+                appendMessage(`Upload successful: ${data.message}`, 'bot-message');
+            }).catch(error => {
+                // Handle the error here.
+                console.error('Error uploading file:', error);
+                appendMessage('Upload failed.', 'error-message');
+            });
+        } else {
+            // If no file is selected, display an error message to the user.
+            appendMessage('No file selected for upload.', 'error-message');
         }
     });
+});
+
+
     document.getElementById('sendButton').addEventListener('click', async () => {
         await submitQuery();
     });
-});
 
 
 async function submitQuery() {
     const queryInput = document.getElementById('query');
     const query = queryInput.value.trim();
-    if (!query) return;
+    if (!query) return; // Don't do anything if the query is empty
 
     appendMessage(query, 'user-message');
-    queryInput.value = '';
-    showLoadingIndicator(true);
+    queryInput.value = ''; // Clear the input after sending
+    showLoadingIndicator(true); // Optional: show a loading indicator
 
-    // Determine the endpoint based on query content
-    let endpoint = '/query';  // Default endpoint for regular queries
-    let bodyPayload = { query: query };  // Default payload
+    const response = await fetch('/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+    });
 
-    if (query.toLowerCase().includes("search:")) {
-        endpoint = '/web_search';
-        bodyPayload = { query: query.replace("search:", "").trim(), detailed: true };
-    } else if (query.toLowerCase().includes("say:")) {
-        endpoint = '/synthesize';
-        const text = query.replace("say:", "").trim();
-        if (text === '') {
-            appendMessage('Please provide text for synthesis.', 'error-message');
-            showLoadingIndicator(false);
-            return;
-        }
-        bodyPayload = { text: text, language: 'en' };  // Explicitly set language for clarity
+    if (!response.ok) {
+        console.error('Error fetching response:', response.statusText);
+        appendMessage(`An error occurred: ${response.statusText}`, 'error-message');
+    } else {
+        const data = await response.json();
+        processResponseData(data);
     }
-
-    console.log("Using endpoint:", endpoint, "with payload:", bodyPayload);
-
-    try {
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(bodyPayload)
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        if (endpoint === '/synthesize') {
-            handleAudioResponse(response);  // Handle audio file response for TTS
-        } else {
-            const data = await response.json();
-            processResponseData(data);  // Process regular text or search data
-        }
-    } catch (error) {
-        console.error('Error fetching response:', error);
-        appendMessage(`An error occurred: ${error.message}`, 'error-message');
-    } finally {
-        showLoadingIndicator(false);
-    }
+    showLoadingIndicator(false); // Hide the loading indicator after processing
 }
+
+
+function appendMessage(message, className, shouldIncludeAudio = false) {
+    const chatMessages = document.getElementById('chat-messages');
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add(className);
+
+    message = convertUrlsToLinks(message);
+    messageDiv.innerHTML = message;
+
+    if (shouldIncludeAudio && className === 'bot-message') {
+        const button = document.createElement('button');
+        button.textContent = 'Play';
+        button.onclick = () => fetchAudio(message);
+        messageDiv.appendChild(button); // Append button to the message div
+    }
+
+    chatMessages.appendChild(messageDiv);
+    scrollToLatestMessage();
+}
+
 
 
 function handleAudioResponse(response) {
@@ -134,26 +163,6 @@ function appendVisualizationPlaceholder() {
 
 
 
-function appendMessage(message, className, shouldIncludeAudio = false) {
-    const chatMessages = document.getElementById('chat-messages');
-    const messageDiv = document.createElement('div');
-    messageDiv.classList.add(className);
-    
-    // Convert URLs to clickable links and set as innerHTML for link functionality
-    message = convertUrlsToLinks(message);
-    messageDiv.innerHTML = message;
-
-    if (shouldIncludeAudio && className === 'bot-message') {
-        const button = document.createElement('button');
-        button.textContent = 'Play';
-        button.onclick = () => fetchAudio(message);
-        messageDiv.appendChild(button); // Append button to the message div
-    }
-
-    chatMessages.appendChild(messageDiv);
-    scrollToLatestMessage();
-}
-
 function processResponseData(data) {
     console.log("Received data from server:", data);
     switch (data.type) {
@@ -209,4 +218,3 @@ function showLoadingIndicator(isLoading) {
     loadingIndicator.style.display = isLoading ? 'block' : 'none';
 }
 
-  

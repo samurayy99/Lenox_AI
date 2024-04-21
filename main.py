@@ -5,7 +5,7 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler  # Ensure this is correctly imported
 from dotenv import load_dotenv
-from documents import DocumentHandler
+from documents import DocumentHandler, allowed_file
 from utils import Lenox
 from prompts import PromptEngine
 from langchain_community.tools import DuckDuckGoSearchRun, DuckDuckGoSearchResults
@@ -65,6 +65,23 @@ def index():
 def serve_audio(filename):
     return send_from_directory('path_to_audio_files_directory', filename)
 
+
+
+@app.route('/upload', methods=['POST'])
+def upload_document():
+    app.logger.debug(f"Session data before upload: {session}")
+    
+    file = request.files.get('file')
+    if not file or file.filename == '':
+        app.logger.error("No file selected for upload.")
+        return jsonify({'error': 'No file selected for upload.'}), 400
+
+    if allowed_file(file.filename):
+        success, message = document_handler.save_document(file)
+        return jsonify({'message': message}) if success else jsonify({'error': message}), 400
+    
+    app.logger.error(f"File with name {file.filename} not allowed.")
+    return jsonify({'error': 'File type not allowed'}), 400
 
 
 @app.route('/synthesize', methods=['POST'])
@@ -144,13 +161,6 @@ def create_visualization():
 def get_data():
     return jsonify(lenox.get_sample_data())
 
-@app.route('/upload', methods=['POST'])
-def upload_document():
-    file = request.files.get('file')
-    if file and file.filename:
-        success, message = document_handler.save_document(file)
-        return jsonify({'message': message}) if success else jsonify({'error': message}), 400
-    return jsonify({'error': 'No file provided'}), 400
 
 @socketio.on('connect')
 def on_connect():

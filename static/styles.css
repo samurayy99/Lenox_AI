@@ -198,14 +198,15 @@ button:hover {
   padding: 10px 20px;
   border-radius: 20px;
   max-width: 80%;
-  margin: 5px;
+  margin: 5px 5px 5px 0; /* Adjusted left margin to 0 to shift the bubble a bit to the left */
   word-wrap: break-word;
-  align-self: flex-end; /* Aligns the user messages to the right */
+  align-self: flex-start; /* Keeps user messages on the left */
 }
+
 
 /* AI Message Bubble */
 .ai-message {
-  background-color: #fff;
+  background-color: #f0f5fc;
   color: #000;
   padding: 10px 20px;
   border-radius: 20px;
@@ -285,4 +286,3 @@ button {
 button:hover {
   background-color: #b0c4de;
 }
-

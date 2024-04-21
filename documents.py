@@ -1,5 +1,6 @@
 from llama_index.llms.openai import OpenAI
 import os
+import textract
 import logging
 from werkzeug.utils import secure_filename
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext, load_index_from_storage
@@ -76,15 +77,25 @@ class DocumentHandler:
         try:
             file.save(save_path)
             self._index_documents()
-            return True, "File successfully uploaded and indexed."
+            return True, f"Datei {filename} erfolgreich hochgeladen und indiziert."
         except Exception as e:
-            logging.error(f"Error saving document: {e}")
-            return False, f"Error saving document: {e}"
-        
-    def handle_document_request(query, chat_history):
-        document_details = query_document_index(query)
-        if not document_details:
-            return {"type": "error", "content": "Document not found."}
-        return {"type": "document", "content": document_details}
-    
-        
+            logging.error(f"Fehler beim Speichern des Dokuments: {e}")
+            return False, f"Fehler beim Speichern des Dokuments: {e}"
+
+    def read_document(self, filename: str):
+        file_path = os.path.join(self.document_folder, filename)
+        try:
+            # Use textract to pull out text content from various file types
+            text = textract.process(file_path)
+            return text.decode('utf-8')
+        except Exception as e:
+            logging.error(f"Failed to read document: {e}")
+            return None
+
+    def process_uploaded_document(self, filename: str):
+        content = self.read_document(filename)
+        if content:
+            # Hier können Sie zusätzliche Verarbeitung hinzufügen, z.B. Textanalyse
+            pass  # Dies ist ein Platzhalter für Ihre Verarbeitungslogik
+        else:
+            logging.error("Dokumentinhalt konnte nicht verarbeitet werden.")

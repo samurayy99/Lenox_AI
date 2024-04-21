@@ -157,6 +157,26 @@ class Lenox:
             logging.error("Visualization response content is not a string.")
             return {"type": "error", "content": "Error processing the visualization."}
         return response
+    
+
+    def get_sample_data(self):
+        # Implementation as provided above
+        return {
+            'x': [1, 2, 3, 4, 5],
+            'y': [2, 3, 5, 7, 11],
+            'type': 'line'
+        }
+
+    def create_visualization(self, x, y, type='line'):
+        # Implementation as provided above
+        import plotly.graph_objs as go
+        import plotly.offline as pyo
+
+        data = [go.Scatter(x=x, y=y, mode=type)]
+        layout = go.Layout(title='Sample Visualization')
+        fig = go.Figure(data=data, layout=layout)
+        return pyo.plot(fig, output_type='div')    
+    
 
     def is_visualization_query(self, query: str) -> bool:
         visualization_keywords = ["visualize", "graph", "chart", "plot", "show me a graph of", "display data"]
@@ -177,6 +197,7 @@ class Lenox:
             data = {'x': [1, 2, 3, 4], 'y': [10, 11, 12, 13], 'type': 'scatter'}
         return data
 
+
     def handle_document_query(self, query, chat_history, session_id):
         response = self.document_handler.query(query)
         if not isinstance(response, str):
@@ -184,6 +205,8 @@ class Lenox:
             return {"type": "error", "content": "Error processing the document query."}
         self.memory.add_message(AIMessage(content=response, sender="system", session_id=session_id))
         return {"type": "text", "content": response}
+    
+
     
     
     def create_response(self, content, response_type="text") -> dict:
