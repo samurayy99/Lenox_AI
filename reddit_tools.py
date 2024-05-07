@@ -26,8 +26,10 @@ def get_reddit_data(subreddit: str, category: str = 'hot') -> str:
     """
     sub = reddit.subreddit(subreddit)
     posts = getattr(sub, category)(limit=5)
-    posts_str = "\n\n".join([f"Title: {post.title}\nURL: {post.url}" for post in posts])
+    posts_str = "\n\n".join([f"[Title: {post.title}]({post.url})" for post in posts])
     return f"Latest posts from r/{subreddit}:\n{posts_str}"
+
+
 
 @tool
 def count_mentions(subreddit: str, keyword: str, time_filter='week') -> str:

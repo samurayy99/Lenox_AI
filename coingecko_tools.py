@@ -1,91 +1,137 @@
+import logging
 import requests
+import pandas as pd
+from pycoingecko import CoinGeckoAPI
+from typing import List
 import numpy as np
-from pydantic import BaseModel, Field
-from langchain.agents import tool  # Use the @tool decorator
+from functools import lru_cache
+from langchain.agents import tool
 
-# Define models for input validation
-class CryptoDataInput(BaseModel):
-    symbol: str = Field(..., description="The symbol of the cryptocurrency (e.g., BTC, ETH)")
+# Setup basic logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-@tool
-def get_coingecko_market_data(coin_id: str, vs_currency: str = "usd") -> str:
-    """
-    Fetches and returns market data for a specified cryptocurrency using CoinGecko API.
-    """
-    api_url = "https://api.coingecko.com/api/v3/coins/markets"
-    params = {
-        "vs_currency": vs_currency,
-        "ids": coin_id,
-    }
-    try:
-        response = requests.get(api_url, params=params)
-        data = response.json()
-        if data and len(data) > 0:
-            coin_data = data[0]  # Assuming the first item is the coin we're interested in
-            price = coin_data['current_price']
-            market_cap = coin_data['market_cap']
-            volume_24h = coin_data['total_volume']
-            return (f"Price: {price} {vs_currency}, Market Cap: {market_cap}, "
-                    f"24h Volume: {volume_24h} for {coin_id}.")
-        else:
-            return "Failed to fetch data from CoinGecko or coin not found."
-    except Exception as e:
-        return f"Exception occurred: {str(e)}"
-
-# Since we determined the liquidity score is not available, we will not include the get_liquidity_score function.
+# Initialize CoinGecko API client
+cg = CoinGeckoAPI()
 
 @tool
-def get_macd(coin_id: str, vs_currency: str = "usd", days: int = 26) -> str:
+def get_market_data(coin_ids: List[str], vs_currency: str = 'usd') -> str:
     """
-    Calculates the Moving Average Convergence Divergence (MACD) for a specified cryptocurrency.
+    Fetches and returns current market data for specified cryptocurrencies.
     """
-    historical_data_url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart"
-    params = {
-        'vs_currency': vs_currency,
-        'days': days
-    }
-    
     try:
-        response = requests.get(historical_data_url, params=params)
-        data = response.json()
-        prices = [price[1] for price in data['prices']]
-        
-        # Calculate MACD
-        short_ema = np.mean(prices[-12:])  # 12-day EMA
-        long_ema = np.mean(prices[-26:])  # 26-day EMA
-        macd = short_ema - long_ema
-        signal_line = np.mean(prices[-9:])  # 9-day EMA of MACD for signal line
-        
-        return f"MACD: {macd:.2f}, Signal Line: {signal_line:.2f} for {coin_id} in {vs_currency}."
+        data = cg.get_price(ids=','.join(coin_ids), vs_currencies=vs_currency)
+        return str(data)
     except Exception as e:
-        return f"Error calculating MACD: {str(e)}"
+        logging.error(f"Exception occurred while fetching market data: {str(e)}")
+        return "Failed to fetch market data."
 
 @tool
-def get_trending_coins():
+@lru_cache(maxsize=100)
+def get_historical_market_data(coin_id: str, vs_currency: str = 'usd', days: int = 90) -> str:
     """
-    Retrieves the list of trending coins from CoinGecko.
+    Fetches historical market data for a specified cryptocurrency over a number of days.
     """
-    url = "https://api.coingecko.com/api/v3/search/trending"
     try:
-        response = requests.get(url)
-        data = response.json()
-        trending_coins = [coin['item']['name'] for coin in data['coins']]
-        return f"Trending coins: {', '.join(trending_coins)}"
+        data = cg.get_coin_market_chart_by_id(id=coin_id, vs_currency=vs_currency, days=days)
+        return str(data)
     except Exception as e:
-        return f"Error fetching trending coins: {str(e)}"
+        logging.error(f"Exception occurred while fetching historical market data: {str(e)}")
+        return "Failed to fetch historical market data."
 
 @tool
-def get_public_companies_holdings():
+def get_ohlc(coin_id: str, vs_currency: str = 'usd', days: int = 1) -> str:
     """
-    Retrieves the list of public companies and their cryptocurrency holdings.
+    Fetches OHLC (Open, High, Low, Close) data for a specified cryptocurrency for the last number of days.
     """
-    url = "https://api.coingecko.com/api/v3/companies/public_treasury/bitcoin"
     try:
-        response = requests.get(url)
-        data = response.json()
-        holdings = {company['name']: company['total_holdings'] for company in data['companies']}
-        return f"Public companies holdings: {', '.join([f'{k}: {v}' for k, v in holdings.items()])}"
+        data = cg.get_coin_ohlc_by_id(id=coin_id, vs_currency=vs_currency, days=days)
+        return str(data)
     except Exception as e:
-        return f"Error fetching public companies holdings: {str(e)}"
+        logging.error(f"Exception occurred while fetching OHLC data: {str(e)}")
+        return "Failed to fetch OHLC data."
 
-# Additional functions for other endpoints can be implemented in a similar pattern.
+@tool
+def get_trending_cryptos() -> str:
+    """
+    Retrieves the list of trending cryptocurrencies on CoinGecko.
+    """
+    try:
+        data = cg.get_search_trending()
+        trending_names = [item['item']['name'] for item in data['coins']]
+        return ', '.join(trending_names)
+    except Exception as e:
+        logging.error(f"Exception occurred while fetching trending cryptocurrencies: {str(e)}")
+        return "Failed to fetch trending cryptocurrencies."
+
+@tool
+def calculate_macd(prices: List[float], slow: int = 26, fast: int = 12, signal: int = 9) -> str:
+    """
+    Calculates the Moving Average Convergence Divergence (MACD) for a series of prices.
+    """
+    try:
+        exp1 = pd.Series(prices)
+        ema_fast = exp1.ewm(span=fast, adjust=False).mean()
+        ema_slow = exp1.ewm(span=slow, adjust=False).mean()
+        macd = ema_fast - ema_slow
+        signal_line = macd.ewm(span=signal, adjust=False).mean()
+        macd_value = macd.iloc[-1]
+        signal_line_value = signal_line.iloc[-1]
+        trend = "bullish" if macd_value > signal_line_value else "bearish"
+        return (
+            f"The Moving Average Convergence Divergence (MACD) for Solana for the last month is {macd_value:.2f}, "
+            f"and the Signal Line is {signal_line_value:.2f}. The MACD is a trend-following momentum indicator "
+            f"that shows the relationship between two moving averages of a security’s price. A MACD above the "
+            f"Signal Line suggests a bullish trend, indicating it might be a good time to consider buying. Conversely, "
+            f"a MACD below the Signal Line suggests a bearish trend, which might not be the best time to buy. "
+            "Always consult with a financial advisor or do further research before making investment decisions."
+        )
+    except Exception as e:
+        logging.error(f"Exception occurred while calculating MACD: {str(e)}")
+        return "Failed to calculate MACD."
+
+
+@tool
+def get_exchange_rates(coin_id: str = 'bitcoin') -> str:
+    """
+    Retrieves exchange rates for a given coin (default is Bitcoin) to all other currencies.
+    """
+    try:
+        data = cg.get_exchange_rates()
+        rates = data['rates']
+        base_rate = rates[coin_id]['value']
+        exchange_rates = {cur: rate['value'] / base_rate for cur, rate in rates.items()}
+        return str(exchange_rates)
+    except Exception as e:
+        logging.error(f"Exception occurred while fetching exchange rates: {str(e)}")
+        return "Failed to fetch exchange rates."
+
+@tool
+def calculate_rsi(prices: List[float], period: int = 14) -> str:
+    """
+    Calculates the Relative Strength Index (RSI) for a given series of prices.
+    """
+    try:
+        prices = np.array(prices)
+        deltas = np.diff(prices)
+        seed = deltas[:period+1]
+        up = seed[seed >= 0].sum()/period
+        down = -seed[seed < 0].sum()/period
+        rs = up/down
+        rsi = np.zeros_like(prices)
+        rsi[:period] = 100. - 100./(1.+rs)
+
+        for i in range(period, len(prices)):
+            delta = deltas[i-1]  # because the diff is 1 shorter
+            upval = delta if delta > 0 else 0.
+            downval = -delta if delta < 0 else 0.
+
+            up = (up*(period-1) + upval)/period
+            down = (down*(period-1) + downval)/period
+
+            rs = up/down
+            rsi[i] = 100. - 100./(1.+rs)
+
+        return f"RSI: {rsi[-1]}"
+    except Exception as e:
+        logging.error(f"Exception occurred while calculating RSI: {str(e)}")
+        return "Failed to calculate RSI."

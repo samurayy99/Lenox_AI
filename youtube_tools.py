@@ -1,14 +1,14 @@
-import requests
+import logging
 from typing import List
 from langchain.agents import tool
 from langchain_openai import OpenAI
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.tools import YouTubeSearchTool
 from langchain_community.document_loaders import YoutubeLoader
 from langchain_community.vectorstores import Chroma
 from langchain_core.documents import Document
 from langchain.chains.question_answering import load_qa_chain
 import scrapetube
+
 
 
 @tool

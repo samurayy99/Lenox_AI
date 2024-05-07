@@ -1,10 +1,10 @@
 import json
 import logging
-from sqlalchemy import Column, Integer, Text, create_engine, func
+from sqlalchemy import Column, Integer, Text, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import BaseMessage, message_to_dict, messages_from_dict
-from typing import Any, Dict, List, Union, Optional
+from typing import Any, Dict, List
 
 Base = declarative_base()
 
@@ -25,6 +25,7 @@ class SQLChatMessageHistory(BaseChatMessageHistory):
         self.Session = sessionmaker(bind=self.engine)
 
     def add_message(self, message: BaseMessage) -> None:
+        """Add a message to the database."""
         try:
             with self.Session() as session:
                 db_message = Message(session_id=self.session_id, message=json.dumps(message_to_dict(message)))
@@ -34,7 +35,8 @@ class SQLChatMessageHistory(BaseChatMessageHistory):
         except Exception as e:
             logging.error(f"Failed to add message: {e}")
 
-    def messages(self, limit: int = 15) -> List[BaseMessage]:
+    def messages(self, limit: int = 5) -> List[BaseMessage]:
+        """Retrieve messages, ordered by most recent."""
         try:
             with self.Session() as session:
                 db_messages = session.query(Message).filter(
@@ -48,9 +50,12 @@ class SQLChatMessageHistory(BaseChatMessageHistory):
             logging.error(f"Failed to retrieve messages: {e}")
             return []
 
-
     def clear(self) -> None:
-        with self.Session() as session:
-            session.query(Message).filter(Message.session_id == self.session_id).delete()
-            session.commit()
-
+        """Clear all messages associated with the session."""
+        try:
+            with self.Session() as session:
+                session.query(Message).filter(Message.session_id == self.session_id).delete()
+                session.commit()
+            logging.debug("All session messages cleared successfully.")
+        except Exception as e:
+            logging.error(f"Failed to clear messages: {e}")

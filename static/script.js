@@ -1,53 +1,64 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const queryInput = document.getElementById('query');
-    queryInput.addEventListener('keydown', async (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault(); // Prevent the default Enter key behavior.
-            await submitQuery(); // Call the function to submit the query via AJAX.
-        }
-        // No else branch is needed if Shift+Enter is not intended to do anything special.
-    });
+document.getElementById('startRecording').addEventListener('click', function () {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            // Specifying the MIME type to ensure compatibility
+            const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+            let audioChunks = [];
+            mediaRecorder.ondataavailable = function (event) {
+                audioChunks.push(event.data);
+            };
 
-    const uploadForm = document.getElementById('uploadForm');
-    uploadForm.addEventListener('submit', function(event) {
-        event.preventDefault(); // Prevent the traditional form submission.
+            mediaRecorder.onstop = async function () {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const formData = new FormData();
+                formData.append('file', audioBlob, 'recording.webm');
 
-        const fileInput = document.getElementById('fileUpload');
-        const formData = new FormData();
-
-        // Ensure a file is selected for upload.
-        if (fileInput.files.length > 0) {
-            formData.append('file', fileInput.files[0]); // Append the file to the FormData object.
-
-            // Make a POST request to the server to upload the file.
-            fetch('/upload', {
-                method: 'POST',
-                body: formData, // FormData will set the correct multipart content type header.
-            }).then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
+                try {
+                    const response = await fetch('/transcribe', {
+                        method: 'POST',
+                        body: formData,
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        document.getElementById('query').value = data.transcription;
+                    } else {
+                        console.error('Failed to transcribe audio:', await response.text());
+                    }
+                    audioChunks = []; // Clear the chunks for the next recording
+                } catch (error) {
+                    console.error('Error:', error);
                 }
-                return response.json();
-            }).then(data => {
-                // Handle the successful response here.
-                appendMessage(`Upload successful: ${data.message}`, 'bot-message');
-            }).catch(error => {
-                // Handle the error here.
-                console.error('Error uploading file:', error);
-                appendMessage('Upload failed.', 'error-message');
+            };
+
+            document.getElementById('stopRecording').addEventListener('click', function () {
+                mediaRecorder.stop();
+                stream.getTracks().forEach(track => track.stop());
+                document.getElementById('stopRecording').disabled = true;
             });
-        } else {
-            // If no file is selected, display an error message to the user.
-            appendMessage('No file selected for upload.', 'error-message');
-        }
-    });
+
+            document.getElementById('stopRecording').disabled = false;
+            mediaRecorder.start();
+        })
+        .catch(error => console.error('Permission denied or microphone not available:', error));
 });
 
+document.getElementById('startRecording').disabled = false;
 
-    document.getElementById('sendButton').addEventListener('click', async () => {
-        await submitQuery();
-    });
+document.getElementById('sendButton').addEventListener('click', async () => {
+    await submitQuery();
+});
 
+document.getElementById('query').addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        if (!e.shiftKey) {
+            await submitQuery();
+        } else {
+            let content = document.getElementById('query').value;
+            document.getElementById('query').value = content + '\n';
+        }
+    }
+});
 
 async function submitQuery() {
     const queryInput = document.getElementById('query');
@@ -74,14 +85,16 @@ async function submitQuery() {
     showLoadingIndicator(false); // Hide the loading indicator after processing
 }
 
-
 function appendMessage(message, className, shouldIncludeAudio = false) {
     const chatMessages = document.getElementById('chat-messages');
     const messageDiv = document.createElement('div');
     messageDiv.classList.add(className);
 
-    message = convertUrlsToLinks(message);
-    messageDiv.innerHTML = message;
+    // Convert URLs in text messages to clickable links if not already in HTML format
+    // Ensure to sanitize or validate input if it includes user-generated content
+    message = convertUrlsToLinks(message); // Function to convert URLs to clickable links
+
+    messageDiv.innerHTML = message; // Changed from innerText to innerHTML
 
     if (shouldIncludeAudio && className === 'bot-message') {
         const button = document.createElement('button');
@@ -93,6 +106,23 @@ function appendMessage(message, className, shouldIncludeAudio = false) {
     chatMessages.appendChild(messageDiv);
     scrollToLatestMessage();
 }
+
+
+document.querySelectorAll('.dropdown-content a').forEach(item => {
+    item.addEventListener('click', function (e) {
+        e.preventDefault();
+        const predefinedQuery = this.innerText;
+
+        // Special case for "Access Enhanced Dashboard"
+        if (predefinedQuery === "Access Enhanced Dashboard") {
+            window.location.href = '/dashboard'; // Redirect to the dashboard page
+        } else {
+            // For other example queries, copy to the input field
+            document.getElementById('query').value = predefinedQuery;
+            document.getElementById('query').focus();
+        }
+    });
+});
 
 
 

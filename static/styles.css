@@ -1,12 +1,13 @@
 /* Global Styles */
-body, html {
+body,
+html {
   height: 100%;
   margin: 0;
   font-family: 'Courier New', monospace;
   background-color: #e0e5ec;
   color: #000;
-  overflow-x: hidden; /* Prevent horizontal scrolling */
-  font-size: 16px; /* Adjusted base font size for mobile devices */
+  overflow-x: hidden;
+  font-size: 16px;
 }
 
 /* Chat Container */
@@ -16,40 +17,20 @@ body, html {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
-  height: 100vh; /* Full viewport height */
-  max-width: 100%; /* Use full width on mobile */
-  margin: 0; /* Remove margin on mobile */
+  height: 100vh;
+  max-width: 100%;
   overflow: hidden;
   position: relative;
 }
 
-/* Chat Header */
-.chat-header {
-  background-color: #add8e6;
-  color: #000;
-  padding: 10px; /* Adjusted padding */
-  text-align: center;
-  font-size: 20px; /* Adjusted font size for readability */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 5px; /* Reduced gap */
-  flex-direction: column; /* Stack elements vertically on mobile */
-  flex-shrink: 0;
-}
-
-.chat-header h2 {
-  font-family: 'Orbitron', sans-serif;
-  margin: 0;
-  font-weight: 700;
-}
 
 /* Chat Messages */
 .chat-messages {
   display: flex;
   flex-direction: column;
-  gap: 10px; /* Adjusted gap */
-  padding: 15px; /* Adjusted padding */
+  gap: 10px;
+  padding: 10px;
+  /* Reduced padding to expand chat message area */
   overflow-y: auto;
   background-color: #f0f5fc;
   flex-grow: 1;
@@ -59,34 +40,63 @@ body, html {
 .chat-input-container {
   display: flex;
   align-items: center;
-  padding: 10px; /* Adjusted padding */
+  padding: 5px;
+  /* Reduced padding for a slimmer input area */
   background-color: #add8e6;
   border-top: 2px solid #b0c4de;
-  flex-shrink: 0;
-  flex-direction: column; /* Stack elements vertically on mobile */
+  flex-direction: column;
+  gap: 5px;
+  /* Reduced gap between elements */
 }
 
+/* Chat Input */
 .chat-input {
-  font-size: 16px; /* Ensuring minimum font size for input */
+  width: 100%;
+  flex-grow: 1;
+  font-size: 16px;
+  padding: 12px;
+  border-radius: 20px;
+  border: 2px solid #b0c4de;
+  resize: none;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Buttons */
+button {
+  background-color: #add8e6;
+  border: 1px solid #b0c4de;
+  padding: 5px 10px;
+  /* Reduced padding for smaller buttons */
+  margin-top: 5px;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+button:hover {
+  background-color: #b0c4de;
 }
 
 /* Upload Container and Form */
 .upload-container {
-  padding: 10px;
+  padding: 5px;
+  /* Reduced padding for a slimmer upload area */
   background-color: #add8e6;
   border-top: 2px solid #b0c4de;
   display: flex;
-  flex-direction: column; /* Stack elements vertically on mobile */
-  gap: 10px; /* Space between form elements */
+  flex-direction: column;
+  gap: 5px;
+  /* Reduced gap between form elements */
 }
 
 .upload-container label,
 .upload-container input,
 .upload-container button {
-  width: 100%; /* Full width for mobile */
+  width: 100%;
 }
 
-
+/* Loading Indicator */
 .loading-indicator {
   display: none;
   position: fixed;
@@ -97,192 +107,191 @@ body, html {
 }
 
 .loading-indicator img {
-  width: 50px; 
+  width: 50px;
   height: 50px;
   animation: spin 2s linear infinite;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Error Messages */
 .error-message {
-  color: #ff0000; /* Red color for errors */
-  border-color: #ff0000; /* Red border for emphasis */
+  color: #ff0000;
+  border-color: #ff0000;
 }
 
 /* Visualization Container */
 .visualization {
-  width: 100%; /* Full width to fit content */
-  margin-top: 20px; /* Space from the chat messages */
+  width: 100%;
+  margin-top: 20px;
 }
 
 /* Responsive Styles for Tablets */
 @media only screen and (min-width: 601px) and (max-width: 900px) {
   .chat-container {
-    max-width: 80%; /* Slightly wider on tablets */
-    margin: auto; /* Center the container */
-    flex-direction: row; /* Horizontal layout for larger screens */
+    max-width: 80%;
+    margin: auto;
+    flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 20px; /* Increase padding */
+    padding: 10px 20px;
   }
 
   .chat-header {
-    gap: 10px; /* Adjust gap for better spacing */
-    font-size: 24px; /* Increase font size for readability */
+    gap: 10px;
+    font-size: 24px;
   }
 
   .chat-input-container,
   .upload-container {
-    flex-direction: row; /* Align input and buttons side by side */
-    gap: 10px; /* Space between elements */
+    flex-direction: row;
   }
 
   .chat-messages {
-    padding: 20px; /* More padding for larger view */
+    padding: 20px;
   }
 
   .upload-container label,
   .upload-container input,
   .upload-container button {
-    width: auto; /* Adjust width for side-by-side layout */
-    flex-grow: 1; /* Allow input and button to fill space */
+    flex-grow: 1;
   }
 }
 
 /* Responsive Styles for Desktops */
 @media only screen and (min-width: 901px) {
   .chat-container {
-    max-width: 60%; /* Narrower container for desktops */
-    margin: 20px auto; /* Center with more margin */
-  }
-
-  .chat-header,
-  .chat-input-container,
-  .upload-container {
-    flex-direction: row; /* Maintain horizontal layout */
-    gap: 20px; /* Increase gap for more space */
+    max-width: 60%;
+    margin: 20px auto;
   }
 
   .chat-header {
-    font-size: 28px; /* Larger font size for desktop */
+    font-size: 28px;
   }
 
   .chat-messages {
-    padding: 25px; /* Increase padding for larger screens */
+    padding: 25px;
+  }
+
+  .chat-input-container,
+  .upload-container {
+    padding: 15px;
+    flex-direction: row;
+    gap: 20px;
+  }
+
+  .chat-input,
+  #sendButton {
+    font-size: 18px;
   }
 
   .upload-container label,
   .upload-container input,
   .upload-container button {
-    flex-grow: 1; /* Ensure elements use available space */
+    width: auto;
   }
 }
 
-button:focus,
-input:focus {
-  outline: 2px solid #add8e6; /* Example focus style */
-}
-
-button:hover {
-  background-color: #b0c4de; /* Slightly lighter on hover */
-}
-
-/* User Message Bubble */
-.user-message {
-  background-color: #b0c4de;
-  color: #000;
-  padding: 10px 20px;
-  border-radius: 20px;
-  max-width: 80%;
-  margin: 5px 5px 5px 0; /* Adjusted left margin to 0 to shift the bubble a bit to the left */
-  word-wrap: break-word;
-  align-self: flex-start; /* Keeps user messages on the left */
-}
-
-
-/* AI Message Bubble */
+/* Message Bubbles */
+.user-message,
 .ai-message {
-  background-color: #f0f5fc;
-  color: #000;
   padding: 10px 20px;
   border-radius: 20px;
   max-width: 80%;
   margin: 5px;
   word-wrap: break-word;
-  align-self: flex-start; /* Aligns the AI messages to the left */
+  align-self: flex-start;
 }
 
-
-/* Chat Input Container Adjustments */
-.chat-input-container {
-  display: flex;
-  align-items: center;
-  padding: 10px;
-  background-color: #add8e6;
-  border-top: 2px solid #b0c4de;
+.user-message {
+  background-color: #b0c4de;
+  color: #000;
 }
 
-/* Chat Input Adjustments */
-.chat-input {
-  flex-grow: 1; /* Erlaubt dem Eingabefeld, verfügbaren Platz auszufüllen */
-  font-size: 16px;
-  padding: 12px;
-  border-radius: 20px; /* Abgerundete Ecken */
-  border: 2px solid #b0c4de; /* Konsistente Rahmenfarbe */
-  margin-right: 10px; /* Abstand zwischen Eingabefeld und Send-Button */
+.ai-message {
+  background-color: #f0f5fc;
+  color: #000;
 }
 
-/* Send Button Adjustments */
-#sendButton {
+/* Dropdown Button and Content */
+.dropbtn {
   padding: 12px 20px;
-  font-size: 16px; /* Gleiche Schriftgröße wie das Eingabefeld */
-  border-radius: 20px; /* Abgerundete Ecken */
+  font-size: 16px;
+  border-radius: 20px;
   background-color: #add8e6;
   border: 2px solid #b0c4de;
   color: #000;
   cursor: pointer;
 }
 
-#sendButton:hover {
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f0f5fc;
+  border: 2px solid #b0c4de;
+  padding: 10px;
+  border-radius: 20px;
+  z-index: 1;
+  overflow-y: auto;
+  max-height: 300px;
+}
+
+.dropdown-content a {
+  color: #000;
+  padding: 10px 16px;
+  display: block;
+  font-size: 14px;
+}
+
+.dropdown-content a:hover {
   background-color: #b0c4de;
 }
 
-@media only screen and (min-width: 601px) and (max-width: 900px) {
-  /* Anpassungen für Tablets */
-  .chat-input-container {
-    flex-direction: row;
-  }
-
-  .chat-input {
-    margin-right: 10px; /* Stellt sicher, dass der Abstand beibehalten wird */
-  }
+.dropdown:hover .dropdown-content {
+  display: block;
 }
 
-@media only screen and (min-width: 901px) {
-  /* Anpassungen für Desktop */
-  .chat-input-container {
-    padding: 15px; /* Etwas mehr Innenabstand */
-  }
-
-  .chat-input, #sendButton {
-    font-size: 18px; /* Etwas größere Schrift */
-  }
+.dropdown:hover .dropbtn {
+  background-color: #b0c4de;
 }
 
 
-button {
+/* Chat Header */
+.chat-header {
   background-color: #add8e6;
-  border: 1px solid #b0c4de;
-  padding: 8px 16px;
-  margin-top: 5px;
-  cursor: pointer;
-  border-radius: 5px;
+  color: #000;
+  padding: 1px 0;
+  /* Minimal vertical padding and no horizontal padding */
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  flex-shrink: 0;
 }
 
-button:hover {
-  background-color: #b0c4de;
+.chat-logo {
+  height: 50px;
+  display: block;
+  /* Ensure logo is block level for vertical centering */
+  margin-bottom: 5px;
+  /* Add some space between the logo and the text */
+}
+
+/* Reduce margins on h2 if it has any, ensure h2 margin is not causing extra space */
+.chat-header h2 {
+  font-family: 'Orbitron', sans-serif;
+  margin: 0 0 5px 0;
+  /* Only add margin-bottom if needed */
+  font-weight: 700;
+  font-size: 1.25em;
+  /* Reduced font size if it's too large */
 }

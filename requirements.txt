@@ -28,3 +28,4 @@ watchdog
 nltk
 langsmith
 spacy
+statsmodels

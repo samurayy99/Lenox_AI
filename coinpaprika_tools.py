@@ -59,25 +59,3 @@ def get_tags():
     except APIError as e:
         return f"Error fetching tags: {e}"
 
-@tool
-@cached(cache)
-def search_coinpaprika(query: str, categories: str = "currencies,exchanges,icos,people,tags"):
-    """
-    Searches CoinPaprika for specified terms across multiple categories.
-    Args:
-        query (str): Search term.
-        categories (str): Comma-separated categories to include in the search.
-    """
-    api_url = "https://api.coinpaprika.com/v1/search"
-    params = {
-        'q': query,
-        'c': categories
-    }
-    try:
-        data = safe_request(api_url, params=params)
-        results = {}
-        for category in categories.split(','):
-            results[category] = data.get(category, [])
-        return {"Search Results": results}
-    except APIError as e:
-        return f"Error performing search: {e}"

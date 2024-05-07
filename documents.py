@@ -1,101 +1,120 @@
-from llama_index.llms.openai import OpenAI
 import os
-import textract
 import logging
 from werkzeug.utils import secure_filename
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext, load_index_from_storage
 from llama_index.core.langchain_helpers.agents import IndexToolConfig, LlamaIndexTool
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from llama_index.embeddings.langchain import LangchainEmbedding
 
+
+
+lc_embed_model = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/all-mpnet-base-v2"
+)
+embed_model = LangchainEmbedding(lc_embed_model)
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Environment and directory setup
 openai_api_key = os.getenv("OPENAI_API_KEY")
 current_script_path = os.path.dirname(os.path.abspath(__file__))
 document_folder = os.path.join(current_script_path, 'documents') + '/'
 data_folder = os.path.join(current_script_path, 'data') + '/'
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
+# Constants for file handling
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 def allowed_file(filename):
+    """Check if the file has an allowed extension."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 class DocumentHandler:
     def __init__(self, document_folder, data_folder):
         self.document_folder = document_folder
         self.data_folder = data_folder
-        self._load_or_create_index()
+        self.index = self._load_or_create_index()
 
     def _load_or_create_index(self):
+        """Attempt to load the index from storage, or create a new index if necessary."""
         docstore_path = os.path.join(self.data_folder, 'docstore.json')
         if os.path.exists(docstore_path):
-            storage_context = StorageContext.from_defaults(persist_dir=self.data_folder)
-            self.index = load_index_from_storage(storage_context)
+            try:
+                storage_context = StorageContext.from_defaults(persist_dir=self.data_folder)
+                self.index = load_index_from_storage(storage_context)
+            except Exception as e:
+                logging.error(f"Error loading index from storage: {e}")
+                raise
         else:
-            if not os.path.exists(self.data_folder):
-                os.makedirs(self.data_folder)
-            documents = SimpleDirectoryReader(self.document_folder).load_data()
-            if documents:
-                self.index = VectorStoreIndex.from_documents(documents)
-                self.index.storage_context.persist(persist_dir=self.data_folder)
-            else:
-                logging.info("No documents found to create an initial index.")
-
-    def query(self, prompt):
-        if self.index is None:
-            logging.error("Index not initialized. Please upload a document first.")
-            return "Index not initialized. Please upload a document first."
-        
-        tool_config = IndexToolConfig(
-            query_engine=self.index.as_query_engine(),
-            name="Vector Index",
-            description="Useful for querying documents",
-            tool_kwargs={"return_direct": True},
-        )
-        tool = LlamaIndexTool.from_tool_config(tool_config)
-        response = tool(prompt)
-        return response
-
-    def _index_documents(self):
-        logging.info("Indexing documents...")
-        documents = SimpleDirectoryReader(self.document_folder).load_data()
-        if documents:
-            logging.info(f"Loaded {len(documents)} documents for indexing.")
-            self.index = VectorStoreIndex.from_documents(documents)
-            if self.index:
-                self.index.storage_context.persist(persist_dir=self.data_folder)
-                logging.info(f"Documents indexed and persisted at {self.data_folder}.")
-            else:
-                logging.error("Failed to create index from documents.")
-        else:
-            logging.warning("No documents found for indexing.")
+            logging.info("No existing index found. Attempting to create a new index.")
+            try:
+                os.makedirs(self.data_folder, exist_ok=True)
+                documents = SimpleDirectoryReader(self.document_folder).load_data()
+                if documents:
+                    self.index = VectorStoreIndex.from_documents(documents)
+                else:
+                    self.index = None
+                if self.index:
+                    self.index.storage_context.persist(persist_dir=self.data_folder)
+                    logging.info("New index created and documents indexed.")
+                else:
+                    logging.info("No documents found to index at initialization.")
+            except Exception as e:
+                logging.error(f"Error creating a new index: {e}")
+                raise
 
     def save_document(self, file):
+        """Save a new document and update the index."""
         if file.content_length > MAX_FILE_SIZE:
             logging.warning("File size exceeds the maximum limit.")
             return False, "File size exceeds the maximum limit."
+        if not allowed_file(file.filename):
+            logging.warning("Unsupported file type.")
+            return False, "Unsupported file type."
+
         filename = secure_filename(file.filename)
         save_path = os.path.join(self.document_folder, filename)
         try:
             file.save(save_path)
-            self._index_documents()
-            return True, f"Datei {filename} erfolgreich hochgeladen und indiziert."
+            logging.info(f"File saved to {save_path}. Initiating re-indexing.")
+            self.index_documents()
+            return True, "File successfully uploaded and indexed."
         except Exception as e:
-            logging.error(f"Fehler beim Speichern des Dokuments: {e}")
-            return False, f"Fehler beim Speichern des Dokuments: {e}"
+            logging.error(f"Error saving document: {e}")
+            return False, f"Error saving document: {e}"
 
-    def read_document(self, filename: str):
-        file_path = os.path.join(self.document_folder, filename)
+    def index_documents(self):
+        """Re-index all documents in the document directory."""
+        logging.info("Re-indexing all documents...")
         try:
-            # Use textract to pull out text content from various file types
-            text = textract.process(file_path)
-            return text.decode('utf-8')
+            documents = SimpleDirectoryReader(self.document_folder).load_data()
+            if documents:
+                self.index = VectorStoreIndex.from_documents(documents)
+                self.index.storage_context.persist(persist_dir=self.data_folder)
+                logging.info(f"All documents have been re-indexed and data persisted at {self.data_folder}.")
+            else:
+                logging.warning("No documents available for re-indexing.")
         except Exception as e:
-            logging.error(f"Failed to read document: {e}")
-            return None
+            logging.error(f"Error re-indexing documents: {e}")
+            raise
 
-    def process_uploaded_document(self, filename: str):
-        content = self.read_document(filename)
-        if content:
-            # Hier können Sie zusätzliche Verarbeitung hinzufügen, z.B. Textanalyse
-            pass  # Dies ist ein Platzhalter für Ihre Verarbeitungslogik
-        else:
-            logging.error("Dokumentinhalt konnte nicht verarbeitet werden.")
+    def query(self, prompt):
+        """Query the indexed data based on a given prompt."""
+        if not self.index:
+            logging.error("Index not initialized. No document available to query.")
+            return "Index not initialized. Please upload a document first."
+
+        try:
+            tool_config = IndexToolConfig(
+                query_engine=self.index.as_query_engine(),
+                name="Vector Index",
+                description="Useful for querying documents",
+                tool_kwargs={"return_direct": True}
+            )
+            tool = LlamaIndexTool.from_tool_config(tool_config)
+            response = tool(prompt)
+            return response
+        except Exception as e:
+            logging.error(f"Error querying the index: {e}")
+            raise
