@@ -264,6 +264,34 @@ button:hover {
 }
 
 
+/* Dashboards Dropdown - Specific Styles */
+#dashboards-dropdown {
+  display: none;
+  position: absolute;
+  background-color: #f0f5fc;
+  border: 2px solid #b0c4de;
+  padding: 10px;
+  border-radius: 20px;
+  z-index: 1;
+  overflow-y: auto;
+  max-height: 300px;
+}
+
+#dashboards-dropdown a {
+  color: #000;
+  padding: 10px 16px;
+  display: block;
+  font-size: 14px;
+}
+
+#dashboards-dropdown a:hover {
+  background-color: #b0c4de;
+}
+
+.dropdown:hover #dashboards-dropdown {
+  display: block;
+}
+
 /* Chat Header */
 .chat-header {
   background-color: #add8e6;

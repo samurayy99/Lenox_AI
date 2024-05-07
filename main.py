@@ -15,6 +15,7 @@ from tool_imports import import_tools
 import whisper
 from dashboards.dashboard import create_dashboard
 
+
 # Load environment variables
 load_dotenv()
 app = Flask(__name__)
@@ -39,7 +40,7 @@ tools = import_tools()
 
 # Create instances of your components
 document_handler = DocumentHandler(document_folder="documents", data_folder="data")
-prompt_engine_config = PromptEngineConfig(context_length=5, max_tokens=4096)
+prompt_engine_config = PromptEngineConfig(context_length=10, max_tokens=4096)
 prompt_engine = PromptEngine(config=prompt_engine_config, tools=tools)
 
 duckduckgo_search = DuckDuckGoSearchResults()

@@ -1,7 +1,6 @@
 document.getElementById('startRecording').addEventListener('click', function () {
     navigator.mediaDevices.getUserMedia({ audio: true })
         .then(stream => {
-            // Specifying the MIME type to ensure compatibility
             const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
             let audioChunks = [];
             mediaRecorder.ondataavailable = function (event) {
@@ -107,7 +106,16 @@ function appendMessage(message, className, shouldIncludeAudio = false) {
     scrollToLatestMessage();
 }
 
+// New "Dashboards" Event Listeners
+document.querySelectorAll('#dashboards-dropdown a').forEach(item => {
+    item.addEventListener('click', function (e) {
+        e.preventDefault();
+        const dashboardEndpoint = this.getAttribute('href');
+        window.location.href = dashboardEndpoint; // Redirect to the specific dashboard
+    });
+});
 
+// Existing "Explore Features" Dropdown Logic
 document.querySelectorAll('.dropdown-content a').forEach(item => {
     item.addEventListener('click', function (e) {
         e.preventDefault();
@@ -123,8 +131,6 @@ document.querySelectorAll('.dropdown-content a').forEach(item => {
         }
     });
 });
-
-
 
 function handleAudioResponse(response) {
     response.blob().then(blob => {
@@ -144,9 +150,8 @@ function handleAudioResponse(response) {
     });
 }
 
-
 function fetchAudio(text) {
-    const data = { input: text, voice: "alloy" };  // Example setup, adjust as needed
+    const data = { input: text, voice: "alloy" }; // Example setup, adjust as needed
     fetch('/synthesize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -164,11 +169,8 @@ function fetchAudio(text) {
     });
 }
 
-
-
-
 function handleVisualResponse(data) {
-    const visualizationContainer = appendVisualizationContainer();
+    const visualizationContainer = appendVisualizationPlaceholder();
     if (data.content && visualizationContainer) {
         try {
             const visualizationData = JSON.parse(data.content);
@@ -189,9 +191,6 @@ function appendVisualizationPlaceholder() {
     chatMessages.appendChild(visualizationPlaceholder);
     return visualizationPlaceholder;
 }
-
-
-
 
 function processResponseData(data) {
     console.log("Received data from server:", data);
@@ -226,12 +225,10 @@ function processResponseData(data) {
     }
 }
 
-
 function playAudio(audioUrl) {
     const audio = new Audio(audioUrl);
     audio.play().catch(error => console.error('Error playing audio:', error));
 }
-
 
 function convertUrlsToLinks(text) {
     const urlRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
@@ -247,4 +244,3 @@ function showLoadingIndicator(isLoading) {
     const loadingIndicator = document.getElementById('loadingIndicator');
     loadingIndicator.style.display = isLoading ? 'block' : 'none';
 }
-

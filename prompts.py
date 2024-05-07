@@ -45,7 +45,7 @@ class Interaction:
 
 class PromptEngineConfig:
     """Configuration class to customize prompt behavior."""
-    def __init__(self, model: str = "gpt-3.5-turbo", context_length: int = 10, max_tokens: int = 4096):
+    def __init__(self, model: str = "gpt-3.5-turbo-0125", context_length: int = 10, max_tokens: int = 4096):
         self.model = model
         self.context_length = context_length
         self.max_tokens = max_tokens
