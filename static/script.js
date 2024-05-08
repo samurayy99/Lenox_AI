@@ -1,44 +1,104 @@
-document.getElementById('startRecording').addEventListener('click', function () {
-    navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(stream => {
-            const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-            let audioChunks = [];
-            mediaRecorder.ondataavailable = function (event) {
-                audioChunks.push(event.data);
-            };
+document.addEventListener('DOMContentLoaded', () => {
+    // Start recording button
+    const startRecordingButton = document.getElementById('startRecording');
+    const stopRecordingButton = document.getElementById('stopRecording');
+    const sendButton = document.getElementById('sendButton');
+    const queryInput = document.getElementById('query');
 
-            mediaRecorder.onstop = async function () {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                const formData = new FormData();
-                formData.append('file', audioBlob, 'recording.webm');
+    // Add an event listener to start recording
+    if (startRecordingButton) {
+        startRecordingButton.addEventListener('click', function () {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                    let audioChunks = [];
+                    mediaRecorder.ondataavailable = function (event) {
+                        audioChunks.push(event.data);
+                    };
 
-                try {
-                    const response = await fetch('/transcribe', {
-                        method: 'POST',
-                        body: formData,
-                    });
-                    if (response.ok) {
-                        const data = await response.json();
-                        document.getElementById('query').value = data.transcription;
-                    } else {
-                        console.error('Failed to transcribe audio:', await response.text());
+                    mediaRecorder.onstop = async function () {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const formData = new FormData();
+                        formData.append('file', audioBlob, 'recording.webm');
+
+                        try {
+                            const response = await fetch('/transcribe', {
+                                method: 'POST',
+                                body: formData,
+                            });
+                            if (response.ok) {
+                                const data = await response.json();
+                                queryInput.value = data.transcription;
+                            } else {
+                                console.error('Failed to transcribe audio:', await response.text());
+                            }
+                            audioChunks = []; // Clear the chunks for the next recording
+                        } catch (error) {
+                            console.error('Error:', error);
+                        }
+                    };
+
+                    if (stopRecordingButton) {
+                        stopRecordingButton.addEventListener('click', function () {
+                            mediaRecorder.stop();
+                            stream.getTracks().forEach(track => track.stop());
+                            stopRecordingButton.disabled = true;
+                        });
+                        stopRecordingButton.disabled = false;
                     }
-                    audioChunks = []; // Clear the chunks for the next recording
-                } catch (error) {
-                    console.error('Error:', error);
+
+                    mediaRecorder.start();
+                })
+                .catch(error => console.error('Permission denied or microphone not available:', error));
+        });
+        startRecordingButton.disabled = false;
+    }
+
+    // Add an event listener to the send button
+    if (sendButton) {
+        sendButton.addEventListener('click', async () => {
+            await submitQuery();
+        });
+    }
+
+    // Add an event listener for the Enter key in the query input
+    if (queryInput) {
+        queryInput.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (!e.shiftKey) {
+                    await submitQuery();
+                } else {
+                    let content = queryInput.value;
+                    queryInput.value = content + '\n';
                 }
-            };
+            }
+        });
+    }
 
-            document.getElementById('stopRecording').addEventListener('click', function () {
-                mediaRecorder.stop();
-                stream.getTracks().forEach(track => track.stop());
-                document.getElementById('stopRecording').disabled = true;
-            });
+    // Dashboard Event Listeners
+    document.querySelectorAll('#dashboards-dropdown a').forEach(item => {
+        item.addEventListener('click', function (e) {
+            e.preventDefault();
+            const dashboardEndpoint = this.getAttribute('href');
+            window.location.href = dashboardEndpoint; // Redirect to the specific dashboard
+        });
+    });
 
-            document.getElementById('stopRecording').disabled = false;
-            mediaRecorder.start();
-        })
-        .catch(error => console.error('Permission denied or microphone not available:', error));
+    // "Explore Features" Dropdown Logic
+    document.querySelectorAll('.dropdown-content a').forEach(item => {
+        item.addEventListener('click', function (e) {
+            e.preventDefault();
+            const predefinedQuery = this.innerText;
+
+            if (predefinedQuery === "Access Enhanced Dashboard") {
+                window.location.href = '/dashboard'; // Redirect to the dashboard page
+            } else {
+                queryInput.value = predefinedQuery;
+                queryInput.focus();
+            }
+        });
+    });
 });
 
 document.getElementById('startRecording').disabled = false;
@@ -244,3 +304,53 @@ function showLoadingIndicator(isLoading) {
     const loadingIndicator = document.getElementById('loadingIndicator');
     loadingIndicator.style.display = isLoading ? 'block' : 'none';
 }
+
+async function loadPredictiveDashboard() {
+    const visualizationContainer = document.getElementById('visualization');
+    visualizationContainer.innerHTML = `
+        <div id="predictive-forecast-chart"></div>
+        <div id="predictive-metric-results"></div>
+    `;
+
+    try {
+        const response = await fetch('/api/predictive-data');
+        if (response.ok) {
+            const data = await response.json();
+            renderForecastChart(data.forecast);
+            renderMetricsResults(data.metrics);
+        } else {
+            console.error('Failed to load predictive data:', response.statusText);
+        }
+    } catch (error) {
+        console.error('Error fetching predictive data:', error);
+    }
+}
+
+
+function renderForecastChart(forecastData) {
+    Plotly.newPlot('predictive-forecast-chart', forecastData.data, forecastData.layout);
+}
+
+function renderMetricsResults(metrics) {
+    const metricsContainer = document.getElementById('predictive-metric-results');
+    metricsContainer.innerHTML = `
+        <ul>
+            ${Object.entries(metrics).map(([key, value]) => `<li>${key}: ${value}</li>`).join('')}
+        </ul>
+    `;
+}
+
+// Update the event listener for predictive analytics
+document.querySelectorAll('#dashboards-dropdown a').forEach(item => {
+    item.addEventListener('click', async function (e) {
+        e.preventDefault();
+        const dashboardEndpoint = this.getAttribute('href');
+
+        if (dashboardEndpoint === '/dashboard/predictive') {
+            await loadPredictiveDashboard();
+        } else {
+            window.location.href = dashboardEndpoint;
+        }
+    });
+});
+

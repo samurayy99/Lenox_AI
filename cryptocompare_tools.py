@@ -44,13 +44,23 @@ def get_historical_daily(symbol: str, currency: str = 'USD', limit: int = 30) ->
     api_url = f"https://min-api.cryptocompare.com/data/v2/histoday?fsym={symbol}&tsym={currency}&limit={limit}"
     api_key = os.getenv('CRYPTOCOMPARE_API_KEY')
     headers = {'authorization': f'Apikey {api_key}'} if api_key else {}
+
     try:
         response = requests.get(api_url, headers=headers)
         response.raise_for_status()
-        data = response.json()['Data']['Data']
-        return f"Historical daily data for {symbol} to {currency}: {data}"
+        data = response.json()
+
+        # Check for the presence of the 'Data' key
+        if 'Data' not in data or 'Data' not in data['Data']:
+            raise KeyError("Missing 'Data' key in the response.")
+
+        historical_data = data['Data']['Data']
+        return f"Historical daily data for {symbol} to {currency}: {historical_data}"
+    except KeyError as e:
+        return f"Error: {str(e)}. Unable to retrieve historical daily data for {symbol}."
     except requests.RequestException as e:
         raise APIError(response.status_code, str(e))
+
 
 @tool
 def get_top_volume_symbols(currency: str = 'USD', limit: int = 10) -> str:

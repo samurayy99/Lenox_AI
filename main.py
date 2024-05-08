@@ -51,9 +51,24 @@ duckduckgo_search = DuckDuckGoSearchResults()
 lenox = Lenox(tools=tools, document_handler=document_handler, prompt_engine=prompt_engine, duckduckgo_search=duckduckgo_search, openai_api_key=openai_api_key)
 
 
+
+@app.route('/api/predictive-data')
+def get_predictive_data():
+    # Replace this with actual predictive analytics data
+    data = {
+        'forecast': {
+            'data': [{'x': [1, 2, 3], 'y': [4, 5, 6], 'type': 'scatter'}],
+            'layout': {'title': 'Predictive Forecast Chart'}
+        },
+        'metrics': {'Accuracy': '98%', 'Precision': '95%'}
+    }
+    return jsonify(data)
+
+
 @app.route('/dashboard/predictive')
 def predictive_dashboard_page():
-    return render_template('predictive_dashboard.html')
+    return render_template('index.html')
+
 
 @app.route('/dashboard')
 def dashboard_page():
