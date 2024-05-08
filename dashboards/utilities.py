@@ -1,44 +1,21 @@
-import time
 import requests
 import pandas as pd
 from statsmodels.tsa.arima.model import ARIMA
 
-def fetch_cryptocurrency_data(retries=3, delay=5):
-    """Fetch live cryptocurrency data from CoinGecko with retries and delay on rate limit errors."""
-    url = ("https://api.coingecko.com/api/v3/simple/price"
-           "?ids=bitcoin,ethereum,litecoin,binancecoin,dogecoin"
-           "&vs_currencies=usd"
-           "&include_market_cap=true"
-           "&include_24hr_vol=true"
-           "&include_24hr_change=true")
-    
-    for attempt in range(retries):
-        response = requests.get(url)
-        
-        # Check for HTTP 429 (Too Many Requests)
-        if response.status_code == 429:
-            print(f"Rate limit reached. Retrying in {delay} seconds...")
-            time.sleep(delay)
-            delay *= 2  # Exponential backoff
-            continue
-        
-        # If the request succeeds, parse the data
-        if response.ok:
-            data = response.json()
-            return pd.DataFrame([
-                {
-                    'Symbol': symbol.capitalize(),
-                    'Price (USD)': data[symbol]['usd'],
-                    'Volume (24h)': data[symbol]['usd_24h_vol'],
-                    'Market Cap (USD)': data[symbol]['usd_market_cap'],
-                    'Change (24h %)': data[symbol]['usd_24h_change']
-                }
-                for symbol in data
-            ])
-    
-    # If all retries fail, return an empty DataFrame or raise an error
-    print("Unable to fetch cryptocurrency data after retries.")
-    return pd.DataFrame(columns=['Symbol', 'Price (USD)', 'Volume (24h)', 'Market Cap (USD)', 'Change (24h %)'])
+def fetch_cryptocurrency_data():
+    """Fetch live cryptocurrency data from CoinGecko."""
+    url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,litecoin,binancecoin,dogecoin&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true"
+    response = requests.get(url).json()
+    return pd.DataFrame([
+        {
+            'Symbol': symbol.capitalize(),
+            'Price (USD)': data['usd'],
+            'Volume (24h)': data['usd_24h_vol'],
+            'Market Cap (USD)': data['usd_market_cap'],
+            'Change (24h %)': data['usd_24h_change']
+        }
+        for symbol, data in response.items()
+    ])
 
 def fetch_historical_data(symbols, days=30):
     """Fetch historical price data for a list of cryptocurrencies over a specified number of days."""

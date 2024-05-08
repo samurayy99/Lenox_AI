@@ -49,7 +49,7 @@ def get_coin_details(coin_id: str) -> str:
 
 @tool
 @cached(cache)
-def get_tags():
+def get_coin_tags():
     """Fetches and returns a list of all cryptocurrency tags with their description."""
     api_url = "https://api.coinpaprika.com/v1/tags"
     try:
@@ -58,4 +58,7 @@ def get_tags():
         return f"Available Tags:\n{tags}"
     except APIError as e:
         return f"Error fetching tags: {e}"
+
+
+
 

@@ -1,6 +1,9 @@
 from flask import Flask
 from dash import Dash, dcc, html, dash_table
 from .callbacks import register_callbacks
+# In dashboards/dashboard.py
+from metrics.metrics import rmse, mae, accuracy_score, f1_score
+
 
 def create_dashboard(server: Flask) -> Flask:
     """Create a comprehensive cryptocurrency analysis dashboard."""
@@ -26,3 +29,16 @@ def create_dashboard(server: Flask) -> Flask:
     register_callbacks(dash_app)
 
     return server
+
+
+def evaluate_predictions(predictions, targets):
+    rmse_value = rmse(predictions, targets)
+    mae_value = mae(predictions, targets)
+    accuracy = accuracy_score(predictions, targets)
+
+    # Return or store results for further visualization
+    return {
+        "rmse": rmse_value,
+        "mae": mae_value,
+        "accuracy": accuracy
+    }

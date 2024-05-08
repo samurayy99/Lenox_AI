@@ -2,13 +2,10 @@ from dash import Input, Output, dash_table, dcc, html
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from .utilities import fetch_cryptocurrency_data, fetch_historical_data, calculate_rsi, arima_forecast, calculate_correlation
-
+from dashboards.utilities import fetch_cryptocurrency_data, fetch_historical_data, calculate_rsi, arima_forecast, calculate_correlation
 
 def register_callbacks(dash_app):
     """Register all callbacks for the Dash application."""
-    
-    # Callback to switch between tabs and render the appropriate content
     @dash_app.callback(
         Output('tab-content', 'children'),
         Input('tabs', 'value')
@@ -24,7 +21,7 @@ def register_callbacks(dash_app):
                 ),
                 dcc.Graph(id='crypto-bar-chart'),
                 dcc.Graph(id='crypto-heatmap'),
-                dcc.Interval(id='refresh-market-interval', interval=30 * 1000, n_intervals=0)
+                dcc.Interval(id='refresh-market-interval', interval=30*1000, n_intervals=0)
             ])
         elif tab == 'tab-comparative':
             return html.Div([
@@ -175,7 +172,7 @@ def register_callbacks(dash_app):
         forecast_fig.add_trace(go.Scatter(x=future_dates, y=forecast_prices, mode='lines', name='ARIMA Forecast'))
         forecast_fig.update_layout(title=f'{crypto.capitalize()} Price Forecast (ARIMA)', xaxis_title='Date', yaxis_title='Price (USD)', template='plotly_dark')
 
-        # Anomaly detection (can be further developed with custom anomaly detection models)
+        # Anomaly detection (placeholder for custom anomaly detection model)
         anomaly_fig = go.Figure()
         anomaly_fig.update_layout(title=f'{crypto.capitalize()} Anomaly Detection', template='plotly_dark')
 

@@ -16,6 +16,8 @@ import whisper
 from dashboards.dashboard import create_dashboard
 
 
+
+
 # Load environment variables
 load_dotenv()
 app = Flask(__name__)
@@ -47,6 +49,11 @@ duckduckgo_search = DuckDuckGoSearchResults()
 
 # Initialize Lenox with all necessary components
 lenox = Lenox(tools=tools, document_handler=document_handler, prompt_engine=prompt_engine, duckduckgo_search=duckduckgo_search, openai_api_key=openai_api_key)
+
+
+@app.route('/dashboard/predictive')
+def predictive_dashboard_page():
+    return render_template('predictive_dashboard.html')
 
 @app.route('/dashboard')
 def dashboard_page():

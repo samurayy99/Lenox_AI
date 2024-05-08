@@ -1,11 +1,11 @@
 from reddit_tools import get_reddit_data, count_mentions, analyze_sentiment, find_trending_topics
 from cryptocompare_tools import get_current_price, get_historical_daily, get_top_volume_symbols
 from coingecko_tools import (
-    get_market_data, get_historical_market_data, get_ohlc, 
+    get_market_data, get_historical_market_data, get_ohlc,
     get_trending_cryptos, calculate_macd, get_exchange_rates, calculate_rsi
 )
 from youtube_tools import search_youtube, process_youtube_video, query_youtube_video
-from coinpaprika_tools import get_coin_details, get_tags
+from coinpaprika_tools import get_coin_details, get_coin_tags
 
 def import_tools():
     """
@@ -41,6 +41,5 @@ def import_tools():
 
         # CoinPaprika Tools
         get_coin_details,         # Retrieve details about specific coins from CoinPaprika
-        get_tags                 # Fetch tags associated with coins for better categorization
+        get_coin_tags             # Fetch tags associated with coins for better categorization
     ]
-
