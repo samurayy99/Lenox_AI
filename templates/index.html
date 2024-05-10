@@ -16,6 +16,7 @@
     <div class="chat-header">
       <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Lenox Chat Logo" class="chat-logo">
       <h2>Lenox Chat & Dashboard</h2>
+
       <!-- Explore Features Dropdown -->
       <div class="dropdown">
         <button class="dropbtn">Explore Features</button>
@@ -32,15 +33,17 @@
           <a href="#">Search for nice Italian restaurants in Zurich.</a>
         </div>
       </div>
-      <!-- New Dashboards Dropdown -->
+
+      <!-- Dashboards Dropdown -->
       <div class="dropdown">
         <button class="dropbtn">Dashboards</button>
         <div class="dropdown-content" id="dashboards-dropdown">
           <a href="{{ url_for('dashboard_page') }}">Market Overview Dashboard</a>
-          <a href="/dashboard/predictive">Predictive Analytics Dashboard</a>
+          <a href="/crypto_researcher/">Crypto Researcher Dashboard</a>
         </div>
       </div>
     </div>
+
     <!-- Chat Messages and Visualization -->
     <div id="chat-messages" class="chat-messages"></div>
     <div id="visualization" class="visualization"></div>

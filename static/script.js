@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Start recording button
+    // Elements from the page
     const startRecordingButton = document.getElementById('startRecording');
     const stopRecordingButton = document.getElementById('stopRecording');
     const sendButton = document.getElementById('sendButton');
@@ -99,24 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
-});
-
-document.getElementById('startRecording').disabled = false;
-
-document.getElementById('sendButton').addEventListener('click', async () => {
-    await submitQuery();
-});
-
-document.getElementById('query').addEventListener('keydown', async (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        if (!e.shiftKey) {
-            await submitQuery();
-        } else {
-            let content = document.getElementById('query').value;
-            document.getElementById('query').value = content + '\n';
-        }
-    }
 });
 
 async function submitQuery() {

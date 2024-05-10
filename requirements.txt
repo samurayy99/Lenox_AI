@@ -30,3 +30,4 @@ langsmith
 spacy
 statsmodels
 coinpaprika-sdk
+seaborn

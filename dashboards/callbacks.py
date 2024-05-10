@@ -1,29 +1,37 @@
 from dash import Input, Output, dash_table, dcc, html
+from typing import Tuple
 import pandas as pd
+import logging
 import plotly.express as px
 import plotly.graph_objects as go
-from dashboards.utilities import fetch_cryptocurrency_data, fetch_historical_data, calculate_rsi, arima_forecast, calculate_correlation
+from dashboards.utilities import (
+    fetch_cryptocurrency_data,
+    fetch_historical_data,
+    calculate_rsi,
+    arima_forecast,
+    calculate_correlation
+)
 
 def register_callbacks(dash_app):
-    """Register all callbacks for the Dash application."""
+    """Register all callbacks for the main dashboard."""
     @dash_app.callback(
-        Output('tab-content', 'children'),
-        Input('tabs', 'value')
+        Output('main-tab-content', 'children'),  # Unique output ID
+        Input('main-tabs', 'value')  # Tabs specific to the main dashboard
     )
-    def render_tab_content(tab):
-        if tab == 'tab-market':
+    def render_main_tab_content(tab_value):
+        """Render content based on the selected tab."""
+        if tab_value == 'tab-market':
             return html.Div([
                 dash_table.DataTable(
-                    id='crypto-table',
+                    id='market-table',  # Unique ID for market table
                     columns=[{'name': col, 'id': col} for col in ['Symbol', 'Price (USD)', 'Volume (24h)', 'Market Cap (USD)', 'Change (24h %)']],
                     page_size=5,
                     style_cell={'textAlign': 'center'}
                 ),
-                dcc.Graph(id='crypto-bar-chart'),
-                dcc.Graph(id='crypto-heatmap'),
-                dcc.Interval(id='refresh-market-interval', interval=30*1000, n_intervals=0)
+                dcc.Graph(id='market-bar-chart'),  # Unique ID for bar chart
+                dcc.Graph(id='market-heatmap')  # Unique ID for heatmap
             ])
-        elif tab == 'tab-comparative':
+        elif tab_value == 'tab-comparative':
             return html.Div([
                 dcc.Checklist(
                     id='comparative-crypto-list',
@@ -34,7 +42,7 @@ def register_callbacks(dash_app):
                 dcc.Graph(id='comparative-line-chart'),
                 dcc.Graph(id='correlation-matrix')
             ])
-        elif tab == 'tab-historical':
+        elif tab_value == 'tab-historical':
             return html.Div([
                 dcc.Dropdown(
                     id='historical-crypto',
@@ -45,11 +53,12 @@ def register_callbacks(dash_app):
                 dcc.Graph(id='historical-line-chart'),
                 dcc.RangeSlider(
                     id='historical-slider',
-                    min=1, max=365, value=[1, 30],
+                    min=1, max=365,
+                    value=[1, 30],
                     marks={1: '1D', 30: '1M', 180: '6M', 365: '1Y'}
                 )
             ])
-        elif tab == 'tab-predictive':
+        elif tab_value == 'tab-predictive':
             return html.Div([
                 dcc.Dropdown(
                     id='predictive-crypto',
@@ -60,7 +69,7 @@ def register_callbacks(dash_app):
                 dcc.Graph(id='predictive-forecast-chart'),
                 dcc.Graph(id='predictive-anomaly-chart')
             ])
-        elif tab == 'tab-technical':
+        elif tab_value == 'tab-technical':
             return html.Div([
                 dcc.Checklist(
                     id='technical-indicators-list',
@@ -74,7 +83,7 @@ def register_callbacks(dash_app):
                 ),
                 dcc.Graph(id='technical-chart')
             ])
-        elif tab == 'tab-dynamic':
+        elif tab_value == 'tab-dynamic':
             return html.Div([
                 dcc.Dropdown(
                     id='dynamic-chart-type',
@@ -89,15 +98,17 @@ def register_callbacks(dash_app):
                 ),
                 dcc.Graph(id='dynamic-chart')
             ])
+        else:
+            return html.Div('No valid tab selected.')
 
-    # Update market overview charts
     @dash_app.callback(
-        Output('crypto-table', 'data'),
-        Output('crypto-bar-chart', 'figure'),
-        Output('crypto-heatmap', 'figure'),
+        Output('market-table', 'data'),
+        Output('market-bar-chart', 'figure'),
+        Output('market-heatmap', 'figure'),
         Input('refresh-market-interval', 'n_intervals')
     )
     def update_market_data(n_intervals):
+        """Update market overview charts."""
         data = fetch_cryptocurrency_data()
         bar_fig = px.bar(data, x='Symbol', y='Price (USD)', title='Market Prices', text='Price (USD)')
         bar_fig.update_layout(yaxis_title='Price (USD)', template='plotly_dark')
@@ -113,13 +124,13 @@ def register_callbacks(dash_app):
 
         return data.to_dict('records'), bar_fig, heatmap_fig
 
-    # Comparative analysis line chart and correlation matrix
     @dash_app.callback(
         Output('comparative-line-chart', 'figure'),
         Output('correlation-matrix', 'figure'),
         Input('comparative-crypto-list', 'value')
     )
     def update_comparative_line_chart_and_corr(selected_cryptos):
+        """Update comparative analysis charts."""
         data = fetch_historical_data(selected_cryptos)
         fig = go.Figure()
         for symbol, df in data.items():
@@ -132,13 +143,13 @@ def register_callbacks(dash_app):
 
         return fig, corr_fig
 
-    # Historical price chart with technical indicators
     @dash_app.callback(
         Output('historical-line-chart', 'figure'),
         Input('historical-crypto', 'value'),
         Input('historical-slider', 'value')
     )
     def update_historical_line_chart(crypto, days):
+        """Update historical price chart with technical indicators."""
         data = fetch_historical_data([crypto], days=max(days))[crypto]
         data['SMA_20'] = data['Price'].rolling(window=20).mean()
         data['SMA_50'] = data['Price'].rolling(window=50).mean()
@@ -157,41 +168,46 @@ def register_callbacks(dash_app):
         )
         return fig
 
-    # Predictive analytics chart using ARIMA forecasting and anomaly detection
     @dash_app.callback(
         Output('predictive-forecast-chart', 'figure'),
         Output('predictive-anomaly-chart', 'figure'),
         Input('predictive-crypto', 'value')
     )
-    def update_predictive_forecast_and_anomaly(crypto):
+    def update_predictive_forecast_and_anomaly(crypto: str) -> Tuple[go.Figure, go.Figure]:
+        """Construct the forecast and anomaly charts."""
+        logging.info(f"Selected crypto: {crypto}")
         data = fetch_historical_data([crypto], days=180)[crypto]
-        forecast_prices = arima_forecast(data['Price'])
-        forecast_fig = go.Figure()
-        forecast_fig.add_trace(go.Scatter(x=data['Date'], y=data['Price'], mode='lines', name=f'{crypto.capitalize()} Price'))
-        future_dates = pd.date_range(start=data['Date'].iloc[-1], periods=len(forecast_prices) + 1, closed='right').date
-        forecast_fig.add_trace(go.Scatter(x=future_dates, y=forecast_prices, mode='lines', name='ARIMA Forecast'))
-        forecast_fig.update_layout(title=f'{crypto.capitalize()} Price Forecast (ARIMA)', xaxis_title='Date', yaxis_title='Price (USD)', template='plotly_dark')
+        logging.info(f"Historical data for {crypto}: {data}")
 
-        # Anomaly detection (placeholder for custom anomaly detection model)
-        anomaly_fig = go.Figure()
-        anomaly_fig.update_layout(title=f'{crypto.capitalize()} Anomaly Detection', template='plotly_dark')
+        forecast_prices = arima_forecast(data["Price"])
+        logging.info(f"ARIMA forecast data: {forecast_prices}")
+
+        forecast_fig = go.Figure()
+        forecast_fig.add_trace(go.Scatter(x=data["Date"], y=data["Price"], mode="lines", name=f"{crypto.capitalize()} Price"))
+        future_dates = pd.date_range(start=data["Date"].iloc[-1], periods=len(forecast_prices) + 1, closed="right").date
+        forecast_fig.add_trace(go.Scatter(x=future_dates, y=forecast_prices, mode="lines", name="ARIMA Forecast"))
+        forecast_fig.update_layout(
+            title=f"{crypto.capitalize()} Price Forecast (ARIMA)", xaxis_title="Date", yaxis_title="Price (USD)", template="plotly_dark"
+        )
+
+        anomaly_fig = go.Figure()  # Adjust with actual anomaly data
+        anomaly_fig.update_layout(title=f"{crypto.capitalize()} Anomaly Detection", template="plotly_dark")
 
         return forecast_fig, anomaly_fig
 
-    # Technical indicators chart with multiple indicator options
     @dash_app.callback(
         Output('technical-chart', 'figure'),
         Input('technical-indicators-list', 'value')
     )
     def update_technical_chart(indicators):
+        """Update the technical analysis chart with selected indicators."""
         data = fetch_historical_data(['bitcoin'], days=180)['bitcoin']
         fig = go.Figure()
-
         fig.add_trace(go.Scatter(x=data['Date'], y=data['Price'], mode='lines', name='Bitcoin Price'))
 
         if 'SMA_20' in indicators:
             data['SMA_20'] = data['Price'].rolling(window=20).mean()
-            fig.add_trace(go.Scatter(x=data['Date'], y=data['SMA_20'], mode='lines', name='SMA 20'))
+            fig.addentiful_trace(go.Scatter(x=data['Date'], y=data['SMA_20'], mode='lines', name='SMA 20'))
 
         if 'SMA_50' in indicators:
             data['SMA_50'] = data['Price'].rolling(window=50).mean()
@@ -210,12 +226,12 @@ def register_callbacks(dash_app):
         )
         return fig
 
-    # Dynamic chart visualization based on selected type
     @dash_app.callback(
         Output('dynamic-chart', 'figure'),
         Input('dynamic-chart-type', 'value')
     )
     def update_dynamic_chart(chart_type):
+        """Update the dynamic chart visualization based on selected type."""
         data = fetch_cryptocurrency_data()
         if chart_type == 'candlestick':
             fig = go.Figure(
