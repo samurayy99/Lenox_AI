@@ -1,3 +1,4 @@
+import subprocess
 from flask import Flask, render_template, request, jsonify, session, send_from_directory, redirect
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
@@ -13,71 +14,53 @@ from werkzeug.utils import secure_filename
 from langchain_community.tools import DuckDuckGoSearchResults
 from tool_imports import import_tools
 import whisper
-from dashboards.crypto_researcher import create_crypto_researcher, register_crypto_researcher_callbacks
 from dashboards.dashboard import create_dashboard
-from dashboards.callbacks import register_callbacks
-from crypto_analysis import CryptoAnalysis
 
 # Load environment variables
 load_dotenv()
 app = Flask(__name__)
+whisper_model = whisper.load_model("base")  # Rename the Whisper model for clarity
+openai_api_key = os.getenv('OPENAI_API_KEY')
 CORS(app)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'my_secret_key')
 app.config['UPLOAD_FOLDER'] = '/Users/lenox27/LENOX/documents'
 socketio = SocketIO(app)
 
-# Load additional resources
-whisper_model = whisper.load_model("base")
-openai_api_key = os.getenv('OPENAI_API_KEY')
+# Pass the `app` object to `create_dashboard` to integrate Dash
+app = create_dashboard(app)
 
-# Integrate Dash with Flask and return a Dash instance
-dashboard_app = create_dashboard(app)  # Returns a Dash instance for the main dashboard
-register_callbacks(dashboard_app)  # Register callbacks specifically for this Dash instance
-
-# Create the Crypto Researcher dashboard and register its specific callbacks
-crypto_researcher_app = create_crypto_researcher(app)  # Returns a Dash instance for Crypto Researcher
-register_crypto_researcher_callbacks(crypto_researcher_app)  # Use the specific callback registration function
-
-# Configure logging
+# Configure structured logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=1)
 handler.setLevel(logging.DEBUG)
 app.logger.addHandler(handler)
 
-# Import and set up additional tools
+# Import tools before they are used
 tools = import_tools()
+
+# Create instances of your components
 document_handler = DocumentHandler(document_folder="documents", data_folder="data")
 prompt_engine_config = PromptEngineConfig(context_length=10, max_tokens=4096)
 prompt_engine = PromptEngine(config=prompt_engine_config, tools=tools)
+
 duckduckgo_search = DuckDuckGoSearchResults()
 
-# Initialize Lenox with all components
-lenox = Lenox(
-    tools=tools,
-    document_handler=document_handler,
-    prompt_engine=prompt_engine,
-    duckduckgo_search=duckduckgo_search,
-    openai_api_key=openai_api_key
-)
-
-# Create an instance of CryptoAnalysis
-crypto_analysis = CryptoAnalysis()
-
-@app.route('/crypto_analysis', methods=['POST'])
-def crypto_analysis_endpoint():
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No input data provided.'}), 400
-        analysis_result = crypto_analysis.market_structure(data)
-        return jsonify({'analysis_result': analysis_result})
-    except Exception as e:
-        app.logger.error(f"Error in crypto_analysis: {e}")
-        return jsonify({'error': str(e)}), 500
+# Initialize Lenox with all necessary components
+lenox = Lenox(tools=tools, document_handler=document_handler, prompt_engine=prompt_engine, duckduckgo_search=duckduckgo_search, openai_api_key=openai_api_key)
 
 @app.route('/dashboard')
 def dashboard_page():
     return redirect('/dashboard/')
+
+@app.route('/researcher-agent/')
+def researcher_agent():
+    try:
+        # This command should point to the correct location of the AutoGroq main script
+        subprocess.Popen(["streamlit", "run", "AutoGroq/main.py"])
+        return jsonify({"message": "Researcher Agent UI opened successfully"})
+    except Exception as e:
+        app.logger.error(f"Error opening Researcher Agent UI: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.before_request
 def log_request():
@@ -103,6 +86,7 @@ def transcribe_audio():
     if not audio_file:
         return jsonify({'error': 'No file provided'}), 400
 
+    # Save the audio file
     audio_path = secure_filename(audio_file.filename)
     audio_file.save(os.path.join(app.config['UPLOAD_FOLDER'], audio_path))
 
@@ -111,6 +95,7 @@ def transcribe_audio():
     transcription = result['text']
     detected_language = result['language']
 
+    # Clean up the saved file after processing
     os.remove(os.path.join(app.config['UPLOAD_FOLDER'], audio_path))
 
     return jsonify({
@@ -129,6 +114,8 @@ def upload_document():
 
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
         success, message = document_handler.save_document(file)
         if success:
             return jsonify({'message': message}), 200
@@ -156,7 +143,7 @@ def synthesize_speech():
     data = request.get_json()
     input_text = data.get('input')
     voice = data.get('voice', 'onyx')
-    tts_model = data.get('model', 'tts-1-hd')
+    tts_model = data.get('model', 'tts-1-hd')  # Avoid shadowing `model`
 
     if not input_text:
         return jsonify({'error': 'Input text is missing'}), 400
@@ -166,7 +153,7 @@ def synthesize_speech():
         if audio_path:
             directory = os.path.dirname(audio_path)
             filename = os.path.basename(audio_path)
-            return send_from_directory(directory, filename, as_attachment=True)
+            return send_from_directory(directory=directory, path=filename, as_attachment=True)
         else:
             return jsonify({'error': 'Failed to generate audio'}), 500
     except Exception as e:

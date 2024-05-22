@@ -5,6 +5,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendButton = document.getElementById('sendButton');
     const queryInput = document.getElementById('query');
 
+    // Error Handling Function
+    function logErrorAndNotifyUser(message, error = '') {
+        console.error(`${message} ${error}`);
+        alert(message);  // Or handle it via a custom error message display
+    }
+
     // Add an event listener to start recording
     if (startRecordingButton) {
         startRecordingButton.addEventListener('click', function () {
@@ -30,11 +36,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const data = await response.json();
                                 queryInput.value = data.transcription;
                             } else {
-                                console.error('Failed to transcribe audio:', await response.text());
+                                const errorText = await response.text();
+                                logErrorAndNotifyUser('Failed to transcribe audio:', errorText);
                             }
-                            audioChunks = []; // Clear the chunks for the next recording
+                            audioChunks = [];  // Clear the chunks for the next recording
                         } catch (error) {
-                            console.error('Error:', error);
+                            logErrorAndNotifyUser('Error during transcription:', error);
                         }
                     };
 
@@ -49,9 +56,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     mediaRecorder.start();
                 })
-                .catch(error => console.error('Permission denied or microphone not available:', error));
+                .catch(error => logErrorAndNotifyUser('Permission denied or microphone not available:', error));
         });
         startRecordingButton.disabled = false;
+    } else {
+        logErrorAndNotifyUser('Start recording button not found on the page.');
     }
 
     // Add an event listener to the send button
@@ -59,6 +68,8 @@ document.addEventListener('DOMContentLoaded', () => {
         sendButton.addEventListener('click', async () => {
             await submitQuery();
         });
+    } else {
+        logErrorAndNotifyUser('Send button not found on the page.');
     }
 
     // Add an event listener for the Enter key in the query input
@@ -69,37 +80,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!e.shiftKey) {
                     await submitQuery();
                 } else {
-                    let content = queryInput.value;
+                    const content = queryInput.value;
                     queryInput.value = content + '\n';
                 }
             }
         });
+    } else {
+        logErrorAndNotifyUser('Query input field not found on the page.');
     }
-
-    // Dashboard Event Listeners
-    document.querySelectorAll('#dashboards-dropdown a').forEach(item => {
-        item.addEventListener('click', function (e) {
-            e.preventDefault();
-            const dashboardEndpoint = this.getAttribute('href');
-            window.location.href = dashboardEndpoint; // Redirect to the specific dashboard
-        });
-    });
-
-    // "Explore Features" Dropdown Logic
-    document.querySelectorAll('.dropdown-content a').forEach(item => {
-        item.addEventListener('click', function (e) {
-            e.preventDefault();
-            const predefinedQuery = this.innerText;
-
-            if (predefinedQuery === "Access Enhanced Dashboard") {
-                window.location.href = '/dashboard'; // Redirect to the dashboard page
-            } else {
-                queryInput.value = predefinedQuery;
-                queryInput.focus();
-            }
-        });
-    });
 });
+
 
 async function submitQuery() {
     const queryInput = document.getElementById('query');

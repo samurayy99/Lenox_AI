@@ -16,8 +16,15 @@
     <div class="chat-header">
       <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Lenox Chat Logo" class="chat-logo">
       <h2>Lenox Chat & Dashboard</h2>
-
-      <!-- Explore Features Dropdown -->
+      <!-- Separate Dashboard Access Button -->
+      <div class="dashboard-button-container">
+        <button class="dashboard-btn" onclick="location.href='/dashboard/'">Access Dashboard</button>
+      </div>
+      <!-- Researcher Agent Access Button -->
+      <div class="dashboard-button-container">
+        <button class="dashboard-btn" onclick="location.href='/researcher-agent/'">Researcher Agent</button>
+      </div>
+      <!-- Dropdown Menu for exploring features -->
       <div class="dropdown">
         <button class="dropbtn">Explore Features</button>
         <div class="dropdown-content">
@@ -31,24 +38,12 @@
           <a href="#">What are the top cryptocurrencies by 24-hour trading volume in USD?</a>
           <a href="#">Search YouTube for cryptocurrency scalping trading strategies.</a>
           <a href="#">Search for nice Italian restaurants in Zurich.</a>
-        </div>
-      </div>
-
-      <!-- Dashboards Dropdown -->
-      <div class="dropdown">
-        <button class="dropbtn">Dashboards</button>
-        <div class="dropdown-content" id="dashboards-dropdown">
-          <a href="{{ url_for('dashboard_page') }}">Market Overview Dashboard</a>
-          <a href="/crypto_researcher/">Crypto Researcher Dashboard</a>
+          <a href="/dashboard/">Access Enhanced Dashboard</a>
         </div>
       </div>
     </div>
-
-    <!-- Chat Messages and Visualization -->
     <div id="chat-messages" class="chat-messages"></div>
     <div id="visualization" class="visualization"></div>
-
-    <!-- Chat Input -->
     <div class="chat-input-container">
       <textarea id="query" class="chat-input" placeholder="Ask Lenox something..." autofocus></textarea>
       <button id="sendButton">Send</button>
@@ -57,8 +52,6 @@
         <button id="stopRecording" disabled>Stop Recording</button>
       </div>
     </div>
-
-    <!-- Document Upload Form -->
     <div class="upload-container">
       <form id="uploadForm" enctype="multipart/form-data">
         <label for="fileUpload">Upload documents:</label>
@@ -67,11 +60,7 @@
       </form>
     </div>
   </div>
-
-  <!-- JavaScript File -->
   <script src="{{ url_for('static', filename='script.js') }}"></script>
-
-  <!-- Loading Indicator -->
   <div id="loadingIndicator" class="loading-indicator" style="display: none;">
     <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Loading...">
   </div>

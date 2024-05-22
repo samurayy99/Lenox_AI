@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, maximum-scale=1, user-scalable=no">
+    <title>Lenox Chat & Researcher Agent</title>
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Lenox Chat Logo" class="chat-logo">
+            <h2>Lenox Chat & Researcher Agent</h2>
+            <!-- Navigation Buttons -->
+            <div class="dashboard-button-container">
+                <button class="dashboard-btn" onclick="location.href='/dashboard/'">Access Dashboard</button>
+                <button class="dashboard-btn" onclick="location.href='/researcher-agent/'">Researcher Agent</button>
+            </div>
+            <!-- Dropdown Menu for exploring features -->
+            <div class="dropdown">
+                <button class="dropbtn">Explore Features</button>
+                <div class="dropdown-content">
+                    <a href="#">What services do you offer?</a>
+                    <a href="#">What is the current price of Bitcoin?</a>
+                    <a href="#">Show me the price of Ethereum for the last 5 days.</a>
+                    <a href="#">Generate a line chart for these numbers 99 33 66</a>
+                    <a href="#">Calculate the MACD for Solana for the last week.</a>
+                    <a href="#">What are the trending cryptocurrencies this week?</a>
+                    <a href="#">Provide the latest posts from r/CryptoCurrency subreddit.</a>
+                    <a href="#">What are the top cryptocurrencies by 24-hour trading volume in USD?</a>
+                    <a href="#">Search YouTube for cryptocurrency scalping trading strategies.</a>
+                    <a href="#">Search for nice Italian restaurants in Zurich.</a>
+                    <a href="/dashboard/">Access Enhanced Dashboard</a>
+                </div>
+            </div>
+        </div>
+        <div id="researcher-agent-container">
+            <!-- Embed the AutoGroq Streamlit app -->
+            <iframe src="http://localhost:8501" style="width: 100%; height: 800px; border: none;"></iframe>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Loading...">
+    </div>
+</body>
+
+</html>
