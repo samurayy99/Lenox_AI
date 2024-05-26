@@ -15,6 +15,7 @@ from langchain_community.tools import DuckDuckGoSearchResults
 from tool_imports import import_tools
 import whisper
 from dashboards.dashboard import create_dashboard
+import requests  # Ensure requests is imported
 
 # Load environment variables
 load_dotenv()
@@ -48,6 +49,21 @@ duckduckgo_search = DuckDuckGoSearchResults()
 # Initialize Lenox with all necessary components
 lenox = Lenox(tools=tools, document_handler=document_handler, prompt_engine=prompt_engine, duckduckgo_search=duckduckgo_search, openai_api_key=openai_api_key)
 
+STREAMLIT_PORT = os.getenv('STREAMLIT_PORT', 8501)
+STREAMLIT_URL = f"http://localhost:{STREAMLIT_PORT}"
+
+def is_streamlit_running():
+    try:
+        response = requests.get(STREAMLIT_URL)
+        return response.status_code == 200
+    except requests.ConnectionError:
+        return False
+
+def start_streamlit():
+    if not is_streamlit_running():
+        subprocess.Popen(["streamlit", "run", "AutoGroq/main.py", "--server.port", str(STREAMLIT_PORT)])
+        app.logger.info("Streamlit started")
+
 @app.route('/dashboard')
 def dashboard_page():
     return redirect('/dashboard/')
@@ -55,12 +71,17 @@ def dashboard_page():
 @app.route('/researcher-agent/')
 def researcher_agent():
     try:
-        # This command should point to the correct location of the AutoGroq main script
-        subprocess.Popen(["streamlit", "run", "AutoGroq/main.py"])
-        return jsonify({"message": "Researcher Agent UI opened successfully"})
+        start_streamlit()
+        return render_template('researcher_agent.html')
     except Exception as e:
         app.logger.error(f"Error opening Researcher Agent UI: {e}")
-        return jsonify({'error': str(e)}), 500
+        return render_template('error.html', error=str(e)), 500
+
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    if is_streamlit_running():
+        os.system("pkill -f 'streamlit run AutoGroq/main.py'")
+        app.logger.info("Streamlit stopped")
 
 @app.before_request
 def log_request():
@@ -78,7 +99,7 @@ def index():
 
 @app.route('/audio/<filename>')
 def serve_audio(filename):
-    return send_from_directory('path_to_audio_files_directory', filename)
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/transcribe', methods=['POST'])
 def transcribe_audio():

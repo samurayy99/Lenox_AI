@@ -2,15 +2,22 @@ import os
 import streamlit as st 
 
 from config import LLM_PROVIDER, MODEL_TOKEN_LIMITS
-
 from agent_management import display_agents
 from auth_utils import get_api_key
-from ui_utils import display_api_key_input, display_discussion_and_whiteboard, display_download_button, display_user_input, display_rephrased_request, display_reset_and_upload_buttons, display_user_request_input, load_skill_functions
+from ui_utils import (
+    display_api_key_input,
+    display_discussion_and_whiteboard,
+    display_download_button,
+    display_user_input,
+    display_rephrased_request,
+    display_reset_and_upload_buttons,
+    display_user_request_input,
+    load_skill_functions
+)
 
-
-def main(): 
+def main():
     # Construct the relative path to the CSS file
-    css_file = "AutoGroq/style.css"
+    css_file = os.path.join(os.path.dirname(__file__), "style.css")
 
     # Check if the CSS file exists
     if os.path.exists(css_file):
@@ -29,7 +36,6 @@ def main():
             st.warning(f"{llm}_API_KEY not found. Please enter your API key.")
             return
 
-    
     col1, col2 = st.columns([1, 1])  # Adjust the column widths as needed
     with col1:
         selected_model = st.selectbox(
@@ -51,7 +57,7 @@ def main():
             key='temperature'
         )
 
-    # If the LLM Provider is "groq", the title is "AutoGroq"
+    # Set the title based on the LLM Provider
     if LLM_PROVIDER == "groq":
         st.title("AutoGroq")
     elif LLM_PROVIDER == "ollama":
@@ -61,19 +67,17 @@ def main():
     elif LLM_PROVIDER == "openai":
         st.title("Auto̶G̶r̶o̶qChatGPT") 
     
-        
     # Ensure default values for session state are set     
     if "discussion" not in st.session_state: 
         st.session_state.discussion = ""
     if "whiteboard" not in st.session_state: 
-        st.session_state.whiteboard = "" # Apply CSS classes to elements 
-    
+        st.session_state.whiteboard = "" 
+
     with st.sidebar: 
         st.markdown('<div class="sidebar">', unsafe_allow_html=True) 
+        display_agents()
         st.markdown('</div>', unsafe_allow_html=True) 
 
-    display_agents() 
-    
     with st.container(): 
         st.markdown('<div class="main">', unsafe_allow_html=True) 
         display_user_request_input() 
@@ -87,7 +91,7 @@ def main():
         display_reset_and_upload_buttons() 
         st.markdown('</div>', unsafe_allow_html=True) 
 
-    display_download_button()        
-    
+    display_download_button()
+
 if __name__ == "__main__": 
     main()

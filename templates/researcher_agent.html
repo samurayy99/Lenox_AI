@@ -43,6 +43,14 @@
             <!-- Embed the AutoGroq Streamlit app -->
             <iframe src="http://localhost:8501" style="width: 100%; height: 800px; border: none;"></iframe>
         </div>
+        <div class="chat-input-container">
+            <textarea id="query" class="chat-input" placeholder="Ask Lenox something..." autofocus></textarea>
+            <button id="sendButton">Send</button>
+            <div class="audio-control">
+                <button id="startRecording">Start Recording</button>
+                <button id="stopRecording" disabled>Stop Recording</button>
+            </div>
+        </div>
     </div>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
     <div id="loadingIndicator" class="loading-indicator" style="display: none;">

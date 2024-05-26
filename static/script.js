@@ -90,7 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-
 async function submitQuery() {
     const queryInput = document.getElementById('query');
     const query = queryInput.value.trim();
@@ -298,7 +297,6 @@ async function loadPredictiveDashboard() {
     }
 }
 
-
 function renderForecastChart(forecastData) {
     Plotly.newPlot('predictive-forecast-chart', forecastData.data, forecastData.layout);
 }
@@ -325,4 +323,3 @@ document.querySelectorAll('#dashboards-dropdown a').forEach(item => {
         }
     });
 });
-
