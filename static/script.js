@@ -1,92 +1,62 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // Elements from the page
-    const startRecordingButton = document.getElementById('startRecording');
-    const stopRecordingButton = document.getElementById('stopRecording');
-    const sendButton = document.getElementById('sendButton');
-    const queryInput = document.getElementById('query');
+document.getElementById('startRecording').addEventListener('click', function () {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            // Specifying the MIME type to ensure compatibility
+            const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+            let audioChunks = [];
+            mediaRecorder.ondataavailable = function (event) {
+                audioChunks.push(event.data);
+            };
 
-    // Error Handling Function
-    function logErrorAndNotifyUser(message, error = '') {
-        console.error(`${message} ${error}`);
-        alert(message);  // Or handle it via a custom error message display
-    }
+            mediaRecorder.onstop = async function () {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const formData = new FormData();
+                formData.append('file', audioBlob, 'recording.webm');
 
-    // Add an event listener to start recording
-    if (startRecordingButton) {
-        startRecordingButton.addEventListener('click', function () {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(stream => {
-                    const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-                    let audioChunks = [];
-                    mediaRecorder.ondataavailable = function (event) {
-                        audioChunks.push(event.data);
-                    };
-
-                    mediaRecorder.onstop = async function () {
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                        const formData = new FormData();
-                        formData.append('file', audioBlob, 'recording.webm');
-
-                        try {
-                            const response = await fetch('/transcribe', {
-                                method: 'POST',
-                                body: formData,
-                            });
-                            if (response.ok) {
-                                const data = await response.json();
-                                queryInput.value = data.transcription;
-                            } else {
-                                const errorText = await response.text();
-                                logErrorAndNotifyUser('Failed to transcribe audio:', errorText);
-                            }
-                            audioChunks = [];  // Clear the chunks for the next recording
-                        } catch (error) {
-                            logErrorAndNotifyUser('Error during transcription:', error);
-                        }
-                    };
-
-                    if (stopRecordingButton) {
-                        stopRecordingButton.addEventListener('click', function () {
-                            mediaRecorder.stop();
-                            stream.getTracks().forEach(track => track.stop());
-                            stopRecordingButton.disabled = true;
-                        });
-                        stopRecordingButton.disabled = false;
+                try {
+                    const response = await fetch('/transcribe', {
+                        method: 'POST',
+                        body: formData,
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        document.getElementById('query').value = data.transcription;
+                    } else {
+                        console.error('Failed to transcribe audio:', await response.text());
                     }
-
-                    mediaRecorder.start();
-                })
-                .catch(error => logErrorAndNotifyUser('Permission denied or microphone not available:', error));
-        });
-        startRecordingButton.disabled = false;
-    } else {
-        logErrorAndNotifyUser('Start recording button not found on the page.');
-    }
-
-    // Add an event listener to the send button
-    if (sendButton) {
-        sendButton.addEventListener('click', async () => {
-            await submitQuery();
-        });
-    } else {
-        logErrorAndNotifyUser('Send button not found on the page.');
-    }
-
-    // Add an event listener for the Enter key in the query input
-    if (queryInput) {
-        queryInput.addEventListener('keydown', async (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                if (!e.shiftKey) {
-                    await submitQuery();
-                } else {
-                    const content = queryInput.value;
-                    queryInput.value = content + '\n';
+                    audioChunks = []; // Clear the chunks for the next recording
+                } catch (error) {
+                    console.error('Error:', error);
                 }
-            }
-        });
-    } else {
-        logErrorAndNotifyUser('Query input field not found on the page.');
+            };
+
+            document.getElementById('stopRecording').addEventListener('click', function () {
+                mediaRecorder.stop();
+                stream.getTracks().forEach(track => track.stop());
+                document.getElementById('stopRecording').disabled = true;
+            });
+
+            document.getElementById('stopRecording').disabled = false;
+            mediaRecorder.start();
+        })
+        .catch(error => console.error('Permission denied or microphone not available:', error));
+});
+
+document.getElementById('startRecording').disabled = false;
+
+document.getElementById('sendButton').addEventListener('click', async () => {
+    await submitQuery();
+});
+
+document.getElementById('query').addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        if (!e.shiftKey) {
+            await submitQuery();
+        } else {
+            let content = document.getElementById('query').value;
+            document.getElementById('query').value = content + '\n';
+        }
     }
 });
 
@@ -137,31 +107,16 @@ function appendMessage(message, className, shouldIncludeAudio = false) {
     scrollToLatestMessage();
 }
 
-// New "Dashboards" Event Listeners
-document.querySelectorAll('#dashboards-dropdown a').forEach(item => {
-    item.addEventListener('click', function (e) {
-        e.preventDefault();
-        const dashboardEndpoint = this.getAttribute('href');
-        window.location.href = dashboardEndpoint; // Redirect to the specific dashboard
-    });
-});
 
-// Existing "Explore Features" Dropdown Logic
 document.querySelectorAll('.dropdown-content a').forEach(item => {
     item.addEventListener('click', function (e) {
         e.preventDefault();
         const predefinedQuery = this.innerText;
-
-        // Special case for "Access Enhanced Dashboard"
-        if (predefinedQuery === "Access Enhanced Dashboard") {
-            window.location.href = '/dashboard'; // Redirect to the dashboard page
-        } else {
-            // For other example queries, copy to the input field
-            document.getElementById('query').value = predefinedQuery;
-            document.getElementById('query').focus();
-        }
+        document.getElementById('query').value = predefinedQuery;
+        document.getElementById('query').focus();
     });
 });
+
 
 function handleAudioResponse(response) {
     response.blob().then(blob => {
@@ -181,8 +136,9 @@ function handleAudioResponse(response) {
     });
 }
 
+
 function fetchAudio(text) {
-    const data = { input: text, voice: "alloy" }; // Example setup, adjust as needed
+    const data = { input: text, voice: "alloy" };  // Example setup, adjust as needed
     fetch('/synthesize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -200,8 +156,11 @@ function fetchAudio(text) {
     });
 }
 
+
+
+
 function handleVisualResponse(data) {
-    const visualizationContainer = appendVisualizationPlaceholder();
+    const visualizationContainer = appendVisualizationContainer();
     if (data.content && visualizationContainer) {
         try {
             const visualizationData = JSON.parse(data.content);
@@ -222,6 +181,9 @@ function appendVisualizationPlaceholder() {
     chatMessages.appendChild(visualizationPlaceholder);
     return visualizationPlaceholder;
 }
+
+
+
 
 function processResponseData(data) {
     console.log("Received data from server:", data);
@@ -256,10 +218,12 @@ function processResponseData(data) {
     }
 }
 
+
 function playAudio(audioUrl) {
     const audio = new Audio(audioUrl);
     audio.play().catch(error => console.error('Error playing audio:', error));
 }
+
 
 function convertUrlsToLinks(text) {
     const urlRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
@@ -276,50 +240,3 @@ function showLoadingIndicator(isLoading) {
     loadingIndicator.style.display = isLoading ? 'block' : 'none';
 }
 
-async function loadPredictiveDashboard() {
-    const visualizationContainer = document.getElementById('visualization');
-    visualizationContainer.innerHTML = `
-        <div id="predictive-forecast-chart"></div>
-        <div id="predictive-metric-results"></div>
-    `;
-
-    try {
-        const response = await fetch('/api/predictive-data');
-        if (response.ok) {
-            const data = await response.json();
-            renderForecastChart(data.forecast);
-            renderMetricsResults(data.metrics);
-        } else {
-            console.error('Failed to load predictive data:', response.statusText);
-        }
-    } catch (error) {
-        console.error('Error fetching predictive data:', error);
-    }
-}
-
-function renderForecastChart(forecastData) {
-    Plotly.newPlot('predictive-forecast-chart', forecastData.data, forecastData.layout);
-}
-
-function renderMetricsResults(metrics) {
-    const metricsContainer = document.getElementById('predictive-metric-results');
-    metricsContainer.innerHTML = `
-        <ul>
-            ${Object.entries(metrics).map(([key, value]) => `<li>${key}: ${value}</li>`).join('')}
-        </ul>
-    `;
-}
-
-// Update the event listener for predictive analytics
-document.querySelectorAll('#dashboards-dropdown a').forEach(item => {
-    item.addEventListener('click', async function (e) {
-        e.preventDefault();
-        const dashboardEndpoint = this.getAttribute('href');
-
-        if (dashboardEndpoint === '/dashboard/predictive') {
-            await loadPredictiveDashboard();
-        } else {
-            window.location.href = dashboardEndpoint;
-        }
-    });
-});
