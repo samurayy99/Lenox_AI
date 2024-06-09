@@ -13,7 +13,7 @@ def import_tools():
     Each tool function is designed to be compatible with LangChain's convert_to_openai_function, which expects
     callable objects.
     """
-    return [
+    tools = [
         # CryptoCompare Tools
         get_current_price,        # Fetch current price for cryptocurrencies
         get_historical_daily,     # Retrieve historical daily data for price analysis
@@ -43,3 +43,5 @@ def import_tools():
         get_coin_details,         # Retrieve details about specific coins from CoinPaprika
         get_coin_tags             # Fetch tags associated with coins for better categorization
     ]
+
+    return tools

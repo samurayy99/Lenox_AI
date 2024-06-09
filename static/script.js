@@ -1,7 +1,6 @@
 document.getElementById('startRecording').addEventListener('click', function () {
     navigator.mediaDevices.getUserMedia({ audio: true })
         .then(stream => {
-            // Specifying the MIME type to ensure compatibility
             const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
             let audioChunks = [];
             mediaRecorder.ondataavailable = function (event) {
@@ -24,7 +23,7 @@ document.getElementById('startRecording').addEventListener('click', function () 
                     } else {
                         console.error('Failed to transcribe audio:', await response.text());
                     }
-                    audioChunks = []; // Clear the chunks for the next recording
+                    audioChunks = [];
                 } catch (error) {
                     console.error('Error:', error);
                 }
@@ -63,13 +62,13 @@ document.getElementById('query').addEventListener('keydown', async (e) => {
 async function submitQuery() {
     const queryInput = document.getElementById('query');
     const query = queryInput.value.trim();
-    if (!query) return; // Don't do anything if the query is empty
+    if (!query) return;
 
     appendMessage(query, 'user-message');
-    queryInput.value = ''; // Clear the input after sending
-    showLoadingIndicator(true); // Optional: show a loading indicator
+    queryInput.value = '';
+    showLoadingIndicator(true);
 
-    const response = await fetch('/query', {
+    const response = await fetch('/query', {  // Corrected endpoint
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query })
@@ -82,7 +81,7 @@ async function submitQuery() {
         const data = await response.json();
         processResponseData(data);
     }
-    showLoadingIndicator(false); // Hide the loading indicator after processing
+    showLoadingIndicator(false);
 }
 
 function appendMessage(message, className, shouldIncludeAudio = false) {
@@ -90,23 +89,20 @@ function appendMessage(message, className, shouldIncludeAudio = false) {
     const messageDiv = document.createElement('div');
     messageDiv.classList.add(className);
 
-    // Convert URLs in text messages to clickable links if not already in HTML format
-    // Ensure to sanitize or validate input if it includes user-generated content
-    message = convertUrlsToLinks(message); // Function to convert URLs to clickable links
+    message = convertUrlsToLinks(message);
 
-    messageDiv.innerHTML = message; // Changed from innerText to innerHTML
+    messageDiv.innerHTML = message;
 
     if (shouldIncludeAudio && className === 'bot-message') {
         const button = document.createElement('button');
         button.textContent = 'Play';
         button.onclick = () => fetchAudio(message);
-        messageDiv.appendChild(button); // Append button to the message div
+        messageDiv.appendChild(button);
     }
 
     chatMessages.appendChild(messageDiv);
     scrollToLatestMessage();
 }
-
 
 document.querySelectorAll('.dropdown-content a').forEach(item => {
     item.addEventListener('click', function (e) {
@@ -117,11 +113,9 @@ document.querySelectorAll('.dropdown-content a').forEach(item => {
     });
 });
 
-
 function handleAudioResponse(response) {
     response.blob().then(blob => {
         const audioType = blob.type;
-        console.log('Received audio type:', audioType);
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
         audio.oncanplaythrough = () => audio.play();
@@ -136,9 +130,8 @@ function handleAudioResponse(response) {
     });
 }
 
-
 function fetchAudio(text) {
-    const data = { input: text, voice: "alloy" };  // Example setup, adjust as needed
+    const data = { input: text, voice: "alloy" };
     fetch('/synthesize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -156,11 +149,8 @@ function fetchAudio(text) {
     });
 }
 
-
-
-
 function handleVisualResponse(data) {
-    const visualizationContainer = appendVisualizationContainer();
+    const visualizationContainer = appendVisualizationPlaceholder();
     if (data.content && visualizationContainer) {
         try {
             const visualizationData = JSON.parse(data.content);
@@ -175,37 +165,24 @@ function handleVisualResponse(data) {
 }
 
 function appendVisualizationPlaceholder() {
-    let chatMessages = document.getElementById('chat-messages');
-    let visualizationPlaceholder = document.createElement('div');
+    const chatMessages = document.getElementById('chat-messages');
+    const visualizationPlaceholder = document.createElement('div');
     visualizationPlaceholder.classList.add('visualization-placeholder', 'bot-message');
     chatMessages.appendChild(visualizationPlaceholder);
     return visualizationPlaceholder;
 }
 
-
-
-
 function processResponseData(data) {
     console.log("Received data from server:", data);
     switch (data.type) {
         case 'visual':
-            // Corrected to use appendVisualizationPlaceholder
-            const visualizationPlaceholder = appendVisualizationPlaceholder();
-            if (visualizationPlaceholder && data.content) {
-                try {
-                    const visualizationData = JSON.parse(data.content);
-                    Plotly.newPlot(visualizationPlaceholder, visualizationData.data, visualizationData.layout);
-                } catch (e) {
-                    console.error('Error parsing visualization data:', e);
-                    appendMessage('An error occurred while rendering the visualization.', 'error-message');
-                }
-            } else {
-                console.error('Visualization container not found or data.content is null');
-                appendMessage('Visualization content is not available.', 'error-message');
-            }
+            handleVisualResponse(data);
             break;
         case 'text':
-            appendMessage(data.content, 'bot-message', true); // true indicates that audio play button should be included
+            appendMessage(data.content, 'bot-message', true);
+            break;
+        case 'ai':
+            appendMessage(data.content, 'bot-message');
             break;
         case 'error':
             console.error('Error response received:', data.content);
@@ -217,13 +194,6 @@ function processResponseData(data) {
             break;
     }
 }
-
-
-function playAudio(audioUrl) {
-    const audio = new Audio(audioUrl);
-    audio.play().catch(error => console.error('Error playing audio:', error));
-}
-
 
 function convertUrlsToLinks(text) {
     const urlRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
@@ -239,4 +209,3 @@ function showLoadingIndicator(isLoading) {
     const loadingIndicator = document.getElementById('loadingIndicator');
     loadingIndicator.style.display = isLoading ? 'block' : 'none';
 }
-

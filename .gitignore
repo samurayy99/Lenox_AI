@@ -2,7 +2,6 @@ __pycache__
 .cursorignore
 venv-lenox
 venv-lenox27
-.env
 app.log
 app.log.1
 data/

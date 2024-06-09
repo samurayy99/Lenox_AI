@@ -1,49 +1,91 @@
-import openai
-import json
 import logging
-import re
-import plotly
-from datetime import datetime
-from langchain_community.llms import OpenAI
-from visualize_data import VisualizationConfig, create_visualization
-from typing import Any, Dict, List, Union, Optional
+import requests
+from typing import Dict, List, Union, Any
 from langchain_core.utils.function_calling import convert_to_openai_function
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
 from langchain.agents import AgentExecutor
-from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain.schema.runnable import RunnablePassthrough
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain.agents.format_scratchpad import format_to_openai_functions
 from lenox_memory import SQLChatMessageHistory
-from documents import DocumentHandler
-from prompts import PromptEngine
-from nltk import word_tokenize
-from nltk.corpus import stopwords
-import requests
-import plotly.graph_objs as go
-import plotly.offline as pyo
-from visualize_data import VisualizationConfig, create_visualization, create_custom_graph
-
-
+from prompts import PromptEngine, IntentType
+from visualize_data import VisualizationConfig, create_visualization
+from query_preprocessor import preprocess_query
+from api_integration import APIIntegration
+from langchain_community.tools.tavily_search import TavilySearchResults
 
 
 class Lenox:
-    def __init__(self, tools, document_handler, prompt_engine=None, duckduckgo_search=None, connection_string="sqlite:///lenox.db", openai_api_key=None):
+    def __init__(self, tools: Dict[str, Any], document_handler, prompt_engine=None, tavily_search=None, connection_string="sqlite:///lenox.db", openai_api_key=None, api_integration=None):
         self.document_handler = document_handler
         self.prompt_engine = prompt_engine if prompt_engine else PromptEngine(tools=tools)
-        self.duckduckgo_search = duckduckgo_search
+        self.tavily_search = tavily_search if tavily_search else TavilySearchResults()
         self.memory = SQLChatMessageHistory(session_id="my_session", connection_string=connection_string)
-        self.openai_api_key = openai_api_key  # Save the API key
+        self.openai_api_key = openai_api_key
+        self.api_integration = api_integration if api_integration else APIIntegration(openai_api_key)
         self.setup_components(tools)
-
-    def setup_components(self, tools):
-        self.functions = [convert_to_openai_function(f) for f in tools]
+        
+    def setup_components(self, tools: Dict[str, Any]):
+        self.functions = [convert_to_openai_function(f) for f in tools.values()]
         self.model = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0.8).bind(functions=self.functions)
         self.prompt = self.configure_prompts()
         self.chain = self.setup_chain()
-        self.qa = AgentExecutor(agent=self.chain, tools=tools, verbose=False)
+        self.qa = AgentExecutor(agent=self.chain, tools=list(tools.values()), verbose=False)
+
+    def convchain(self, query: str, session_id: str = "my_session") -> dict:
+        if not query:
+            return {"type": "text", "content": "Please enter a query."}
+
+        self.memory.session_id = session_id
+        new_message = HumanMessage(content=query)
+        self.memory.add_message(new_message)
+        chat_history = self.memory.messages()
+
+        formatted_chat_history = [
+            {"role": "user", "content": m.content} if isinstance(m, HumanMessage) else {"role": "assistant", "content": m.content}
+            for m in chat_history
+        ]
+
+        processed_query = preprocess_query(query)
+        intent = self.prompt_engine.classify_intent(processed_query)
+
+        logging.debug(f"Processed query: {processed_query}, Intent: {intent}")
+
+        if intent == IntentType.SEARCH:
+            logging.debug("Entering SEARCH intent block")
+            search_results = self.api_integration.call_tavily_search(processed_query)
+            formatted_result = self.format_tavily_results(search_results)
+            logging.debug(f"Formatted result: {formatted_result}")
+            self.memory.add_message(AIMessage(content=formatted_result, type="ai"))
+            return {"type": "ai", "content": formatted_result}
+
+        if intent == IntentType.VISUALIZATION:
+            logging.debug("Entering VISUALIZATION intent block")
+            vis_type = self.parse_visualization_type(query)
+            data = self.fetch_data_for_visualization(query)
+            if not data:
+                return {"type": "error", "content": "Data for visualization could not be fetched."}
+            visualization_config = VisualizationConfig(data=data, visualization_type=vis_type)
+            visualization_json = create_visualization(visualization_config)
+            self.memory.add_message(AIMessage(content=visualization_json, type="ai"))
+            return {"type": "ai", "content": visualization_json}
+
+        logging.debug("Entering default intent block")
+        result = self.qa.invoke({"input": query, "chat_history": formatted_chat_history})
+        output = result.get('output', 'Error processing the request.')
+        if not isinstance(output, str):
+            output = str(output)
+        self.memory.add_message(AIMessage(content=output, type="ai"))
+        return {"type": "ai", "content": output}
+
+    def format_tavily_results(self, results):
+        """Format the Tavily search results."""
+        formatted_results = ""
+        for result in results:
+            formatted_results += f"URL: {result['url']}\nContent: {result['content']}\n\n"
+        return formatted_results
 
     def configure_prompts(self):
         """Configure the prompt template."""
@@ -66,46 +108,6 @@ class Lenox:
             | OpenAIFunctionsAgentOutputParser()
         )
 
-    def convchain(self, query: str, session_id: str = "my_session") -> dict:
-        """Process a user query."""
-        if not query:
-            return {"type": "text", "content": "Please enter a query."}
-
-        self.memory.session_id = session_id
-        new_message = HumanMessage(content=query, sender="user")
-        self.memory.add_message(new_message)
-        chat_history = self.memory.messages()
-
-        # Check for visualization intent
-        if self.is_visualization_query(query):
-            vis_type = self.parse_visualization_type(query)
-            data = self.fetch_data_for_visualization(query)
-            if not data:
-                return {"type": "error", "content": "Data for visualization could not be fetched."}
-            visualization_config = VisualizationConfig(data=data, visualization_type=vis_type)
-            visualization_json = create_visualization(visualization_config)
-            self.memory.add_message(AIMessage(content=visualization_json))
-            return self.create_response(visualization_json, "visual")
-
-        # Enhanced intent recognition for search using regex
-        if re.search(r"\b(search for|find|lookup|where can i find)\b", query, re.IGNORECASE):
-            if self.duckduckgo_search:
-                search_result = self.duckduckgo_search.run(query)
-                return {"type": "text", "content": search_result}
-            else:
-                return {"type": "text", "content": "Search tool is not configured."}
-
-        # General conversational handling via QA invocation
-        result = self.qa.invoke({"input": query, "chat_history": chat_history})
-        output = result.get('output', 'Error processing the request.')
-
-        # Ensure output is a string
-        if not isinstance(output, str):
-            output = str(output)
-
-        self.memory.add_message(AIMessage(content=output))
-        return {"type": "text", "content": output}
-
     def is_visualization_query(self, query: str) -> bool:
         """Identify visualization-based queries."""
         visualization_keywords = ["visualize", "graph", "chart", "plot", "show me a graph of", "display data"]
@@ -124,19 +126,19 @@ class Lenox:
                 return vis_type
         return 'line'  # Default to line if unspecified
 
-    def fetch_data_for_visualization(self, query: str) -> Dict[str, Union[List[int], List[str]]]:
+    def fetch_data_for_visualization(self, query: str) -> Dict[str, List[Union[int, float, str]]]:
         """Extract data for visualization."""
         numbers = [int(s) for s in query.split() if s.isdigit()]
         if numbers:
-            return {'x': list(range(1, len(numbers) + 1)), 'y': numbers, 'type': 'line'}
+            return {'x': list(range(1, len(numbers) + 1)), 'y': [float(n) for n in numbers]}
         else:
-            return {'x': [1, 2, 3, 4], 'y': [10, 11, 12, 13], 'type': 'scatter'}
+            return {'x': [1, 2, 3, 4], 'y': [10.0, 11.0, 12.0, 13.0]}
 
     def create_response(self, content, response_type="text") -> dict:
         """Create a structured response."""
         if response_type == "visual":
             return {"type": response_type, "content": content}
-        return {"type": response_type, "content": str(content)}
+        return {"type": "text", "content": str(content)}
 
     def handle_document_query(self, query: str) -> str:
         """Query the document index."""

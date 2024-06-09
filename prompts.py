@@ -4,12 +4,11 @@ from collections import deque
 from enum import Enum
 from typing import List, Dict, Any, Optional
 from random import choice
-from langchain_community.tools import DuckDuckGoSearchRun
+from langchain_community.tools.tavily_search import TavilySearchResults
 import re
 
 # Initialize logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
 
 class EmotionLevel(Enum):
     """Enumeration for emotional support responses."""
@@ -20,7 +19,6 @@ class EmotionLevel(Enum):
     EXCITEMENT = "Excitement"
     FRUSTRATION = "Frustration"
     CALM = "Calm"
-
 
 class IntentType(Enum):
     """Different types of recognized intents."""
@@ -35,21 +33,18 @@ class IntentType(Enum):
     CURIOSITY = "curiosity"
     FEEDBACK = "feedback"
 
-
 class Interaction:
     """Represents an interaction between user and assistant."""
     def __init__(self, input: str, response: str):
         self.input = input
         self.response = response
 
-
 class PromptEngineConfig:
     """Configuration class to customize prompt behavior."""
-    def __init__(self, model: str = "gpt-3.5-turbo-0125", context_length: int = 10, max_tokens: int = 4096):
+    def __init__(self, model: str = "gpt-4o", context_length: int = 10, max_tokens: int = 4096):
         self.model = model
         self.context_length = context_length
         self.max_tokens = max_tokens
-
 
 class PromptEngine:
     """Engine to generate, manage, and personalize prompts for Lenox."""
@@ -65,41 +60,7 @@ class PromptEngine:
         self.tools = tools or {}
         self.description = description
         self.emotion_support = emotion_support
-        self.search_tool = DuckDuckGoSearchRun()
-
-    def generate_emotional_response(self, emotion_support: EmotionLevel) -> str:
-        """Generate an emotional response based on the specified emotion level."""
-        responses: Dict[EmotionLevel, List[str]] = {
-            EmotionLevel.HIGH: [
-                "You're doing phenomenal! Together, we'll overcome any challenge.",
-                "You're incredible! Let's achieve even more together."
-            ],
-            EmotionLevel.MEDIUM: [
-                "You're doing well! Let's refine your strategy further.",
-                "You're on the right path. What's next?"
-            ],
-            EmotionLevel.LOW: [
-                "Stay consistent; you're doing great!",
-                "Small progress leads to big results. Let's keep moving forward."
-            ],
-            EmotionLevel.ANXIETY: [
-                "Staying calm and diversifying can help. Let's discuss strategies.",
-                "Don't worry. I'm here to help manage market fluctuations."
-            ],
-            EmotionLevel.EXCITEMENT: [
-                "Keep that energy up! Excitement is contagious.",
-                "Your enthusiasm is motivating. Let's explore new opportunities!"
-            ],
-            EmotionLevel.FRUSTATION: [
-                "Let's tackle challenges together. Frustration is temporary.",
-                "Don't be discouraged. We'll find a solution."
-            ],
-            EmotionLevel.CALM: [
-                "A calm, focused approach helps maintain momentum.",
-                "Keep your goals steady and balanced. Let's grow step-by-step."
-            ]
-        }
-        return choice(responses.get(emotion_support, ["I'm here to guide and support you."]))
+        self.search_tool = TavilySearchResults()
 
     @staticmethod
     def classify_intent(user_query: str) -> IntentType:
@@ -125,6 +86,40 @@ class PromptEngine:
         if re.search(r"\b(feedback|suggestion|advice|recommendation)\b", lower_query):
             return IntentType.FEEDBACK
         return IntentType.GENERAL
+
+    def generate_emotional_response(self, emotion_support: EmotionLevel) -> str:
+        """Generate an emotional response based on the specified emotion level."""
+        responses: Dict[EmotionLevel, List[str]] = {
+            EmotionLevel.HIGH: [
+                "You're doing phenomenal! Together, we'll overcome any challenge.",
+                "You're incredible! Let's achieve even more together."
+            ],
+            EmotionLevel.MEDIUM: [
+                "You're doing well! Let's refine your strategy further.",
+                "You're on the right path. What's next?"
+            ],
+            EmotionLevel.LOW: [
+                "Stay consistent; you're doing great!",
+                "Small progress leads to big results. Let's keep moving forward."
+            ],
+            EmotionLevel.ANXIETY: [
+                "Staying calm and diversifying can help. Let's discuss strategies.",
+                "Don't worry. I'm here to help manage market fluctuations."
+            ],
+            EmotionLevel.EXCITEMENT: [
+                "Keep that energy up! Excitement is contagious.",
+                "Your enthusiasm is motivating. Let's explore new opportunities!"
+            ],
+            EmotionLevel.FRUSTRATION: [
+                "Let's tackle challenges together. Frustration is temporary.",
+                "Don't be discouraged. We'll find a solution."
+            ],
+            EmotionLevel.CALM: [
+                "A calm, focused approach helps maintain momentum.",
+                "Keep your goals steady and balanced. Let's grow step-by-step."
+            ]
+        }
+        return choice(responses.get(emotion_support, ["I'm here to guide and support you."]))
 
     def generate_dynamic_prompt(self, user_query: str, context_messages: List[Dict[str, Any]]) -> str:
         """Create a dynamic prompt based on user query, context, and emotional support."""
@@ -201,3 +196,4 @@ class PromptEngine:
         """Update the toolset of the PromptEngine to enhance its capabilities."""
         self.tools.update(new_tools)
         logging.info("Tools updated successfully.")
+               
