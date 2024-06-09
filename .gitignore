@@ -12,3 +12,4 @@ lenox.db
 requirements.txt
 Dockerfile
 docker-compose.yml
+.env
