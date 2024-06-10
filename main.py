@@ -21,6 +21,7 @@ load_dotenv()
 app = Flask(__name__)
 whisper_model = whisper.load_model("base")
 openai_api_key = os.getenv('OPENAI_API_KEY')
+tavily_api_key = os.getenv('TAVILY_API_KEY')
 CORS(app)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'my_secret_key')
 app.config['UPLOAD_FOLDER'] = '/Users/lenox27/LENOX/documents'
@@ -46,7 +47,7 @@ prompt_engine = PromptEngine(config=prompt_engine_config, tools=tools)
 tavily_search = TavilySearchResults()
 
 # Initialize API Integration
-api_integration = APIIntegration(api_key=openai_api_key or "")
+api_integration = APIIntegration(api_key=tavily_api_key or "")
 
 # Initialize Lenox with all necessary components
 lenox = Lenox(
@@ -166,6 +167,7 @@ def document_query():
         app.logger.error(f"Error processing document query: {e}")
         return jsonify({'error': 'Failed to process document query.'}), 500
 
+
 @app.route('/synthesize', methods=['POST'])
 def synthesize_speech():
     data = request.get_json()
@@ -203,6 +205,7 @@ def handle_feedback():
         return jsonify({'message': 'Feedback processed successfully, and learning was updated.'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/create_visualization', methods=['POST'])
 def create_visualization():

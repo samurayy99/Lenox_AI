@@ -1,5 +1,4 @@
 import logging
-import requests
 import pandas as pd
 from pycoingecko import CoinGeckoAPI
 from typing import List

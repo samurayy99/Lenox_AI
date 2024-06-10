@@ -16,6 +16,7 @@ from query_preprocessor import preprocess_query
 from api_integration import APIIntegration
 from langchain_community.tools.tavily_search import TavilySearchResults
 
+
 class Lenox:
     def __init__(self, tools: Dict[str, Any], document_handler, prompt_engine=None, tavily_search=None, connection_string="sqlite:///lenox.db", openai_api_key=None, api_integration=None):
         self.document_handler = document_handler
@@ -23,9 +24,9 @@ class Lenox:
         self.tavily_search = tavily_search if tavily_search else TavilySearchResults()
         self.memory = SQLChatMessageHistory(session_id="my_session", connection_string=connection_string)
         self.openai_api_key = openai_api_key
-        self.api_integration = api_integration if api_integration else APIIntegration(openai_api_key)
+        self.api_integration = api_integration if api_integration else APIIntegration(api_key=openai_api_key)
         self.setup_components(tools)
-        
+
     def setup_components(self, tools: Dict[str, Any]):
         assert tools is not None and len(tools) > 0, "Tools are not initialized or empty"
         
@@ -34,10 +35,17 @@ class Lenox:
         self.prompt = self.configure_prompts()
         self.chain = self.setup_chain()
         
-        # Ensure the chain is properly initialized
         assert self.chain is not None, "Agent chain is not initialized"
         
         self.qa = AgentExecutor(agent=self.chain, tools=list(tools.values()), verbose=False)
+
+    def handle_search_intent(self, query: str):
+        processed_query = preprocess_query(query)
+        search_results = self.api_integration.call_tavily_search(processed_query)
+        if 'error' in search_results:
+            return {"type": "ai", "content": search_results['error']}
+        formatted_result = self.format_tavily_results(search_results)
+        return {"type": "ai", "content": formatted_result}
 
     def convchain(self, query: str, session_id: str = "my_session") -> dict:
         if not query:
@@ -61,6 +69,8 @@ class Lenox:
         if intent == IntentType.SEARCH:
             logging.debug("Entering SEARCH intent block")
             search_results = self.api_integration.call_tavily_search(processed_query)
+            if 'error' in search_results:
+                return {"type": "ai", "content": search_results['error']}
             formatted_result = self.format_tavily_results(search_results)
             logging.debug(f"Formatted result: {formatted_result}")
             self.memory.add_message(AIMessage(content=formatted_result, type="ai"))
@@ -88,8 +98,12 @@ class Lenox:
     def format_tavily_results(self, results):
         """Format the Tavily search results."""
         formatted_results = ""
-        for result in results:
-            formatted_results += f"URL: {result['url']}\nContent: {result['content']}\n\n"
+        for result in results.get("results", []):  # Ensure correct key is accessed
+            try:
+                formatted_results += f"URL: {result['url']}\nContent: {result['content']}\n\n"
+            except KeyError as e:
+                logging.error(f"Error formatting Tavily result: {e}")
+                formatted_results += "Error formatting result\n\n"
         return formatted_results
 
     def configure_prompts(self):
