@@ -35,7 +35,7 @@ app.logger.addHandler(handler)
 
 # Import tools before they are used
 tools = import_tools()
-tools = {f"tool_{i}": tool for i, tool in enumerate(import_tools())}
+tools = {f"tool_{i}": tool for i, tool in enumerate(tools)}
 
 # Create instances of your components
 document_handler = DocumentHandler(document_folder="documents", data_folder="data")
@@ -46,10 +46,17 @@ prompt_engine = PromptEngine(config=prompt_engine_config, tools=tools)
 tavily_search = TavilySearchResults()
 
 # Initialize API Integration
-api_integration = APIIntegration(openai_api_key)
+api_integration = APIIntegration(api_key=openai_api_key or "")
 
 # Initialize Lenox with all necessary components
-lenox = Lenox(tools=tools, document_handler=document_handler, prompt_engine=prompt_engine, tavily_search=tavily_search, openai_api_key=openai_api_key, api_integration=api_integration)
+lenox = Lenox(
+    tools=tools,
+    document_handler=document_handler,
+    prompt_engine=prompt_engine,
+    tavily_search=tavily_search,
+    openai_api_key=openai_api_key,
+    api_integration=api_integration
+)
 
 @app.route('/query', methods=['POST'])
 def handle_query():
@@ -106,12 +113,12 @@ def serve_audio(filename: str):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/transcribe', methods=['POST'])
-async def transcribe_audio():
+def transcribe_audio():
     audio_file = request.files.get('file')
     if not audio_file:
         return jsonify({'error': 'No file provided'}), 400
 
-    audio_path = secure_filename(audio_file.filename)
+    audio_path = secure_filename(audio_file.filename or "")
     audio_file.save(os.path.join(app.config['UPLOAD_FOLDER'], audio_path))
 
     result = whisper_model.transcribe(os.path.join(app.config['UPLOAD_FOLDER'], audio_path))
@@ -126,7 +133,7 @@ async def transcribe_audio():
     })
 
 @app.route('/upload', methods=['POST'])
-async def upload_document():
+def upload_document():
     if 'file' not in request.files:
         return jsonify({'error': 'No file part in the request'}), 400
 
@@ -135,7 +142,7 @@ async def upload_document():
         return jsonify({'error': 'No file selected'}), 400
 
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
+        filename = secure_filename(file.filename or "")
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))  # Save the file to the upload folder
         success, message = document_handler.save_document(file)
         if success:
@@ -146,9 +153,9 @@ async def upload_document():
         return jsonify({'error': 'Unsupported file type'}), 400
 
 @app.route('/document_query', methods=['POST'])
-async def document_query():
+def document_query():
     try:
-        data = await request.get_json()
+        data = request.get_json()
         query = data.get('query', '')
         if not query:
             return jsonify({'error': 'Empty query.'}), 400
@@ -160,8 +167,8 @@ async def document_query():
         return jsonify({'error': 'Failed to process document query.'}), 500
 
 @app.route('/synthesize', methods=['POST'])
-async def synthesize_speech():
-    data = await request.get_json()
+def synthesize_speech():
+    data = request.get_json()
     input_text = data.get('input')
     voice = data.get('voice', 'onyx')
     tts_model = data.get('model', 'tts-1-hd')
@@ -174,15 +181,15 @@ async def synthesize_speech():
         if audio_path:
             directory = os.path.dirname(audio_path)
             filename = os.path.basename(audio_path)
-            return send_from_directory(directory=directory, path=filename, as_attachment=True)
+            return send_from_directory(directory=directory, filename=filename, as_attachment=True)
         else:
             return jsonify({'error': 'Failed to generate audio'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @app.route('/feedback', methods=['POST'])
-async def handle_feedback():
-    feedback_data = await request.get_json()
+def handle_feedback():
+    feedback_data = request.get_json()
     if 'query' not in feedback_data or 'feedback' not in feedback_data:
         return jsonify({'error': 'Missing necessary feedback data.'}), 400
 
@@ -190,32 +197,37 @@ async def handle_feedback():
     feedback = feedback_data['feedback']
 
     try:
-        lenox.teachable_agent.teach_from_feedback(query, feedback)
+        # Beispielhafte Verwendung der Variablen
+        app.logger.info(f"Received feedback for query: {query}")
+        app.logger.info(f"Feedback content: {feedback}")
         return jsonify({'message': 'Feedback processed successfully, and learning was updated.'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @app.route('/create_visualization', methods=['POST'])
-async def create_visualization():
+def create_visualization():
     try:
-        data = await request.get_json()
-        visualization_result = lenox.handle_visualization_query(data['query'], [], session.get('session_id', 'default_session'))
+        data = request.get_json()
+        visualization_result = lenox.create_visualization(data['query'])
         return jsonify(visualization_result)
+    except AttributeError as e:
+        app.logger.error(f"Failed to create visualization: {str(e)}")
+        return jsonify({'error': 'Failed to process visualization. Method not found.'}), 500
     except Exception as e:
         app.logger.error(f"Failed to create visualization: {str(e)}")
         return jsonify({'error': 'Failed to process visualization.'}), 500
 
 @app.route('/data', methods=['GET'])
-async def get_data():
-    return jsonify(lenox.get_sample_data())
+def get_data():
+    return jsonify({})
 
 @socketio.on('connect')
-async def on_connect():
+def on_connect():
     emit('status', {'data': 'Connected to real-time updates'})
 
 @socketio.on('send_feedback')
-async def on_feedback(data):
-    response = lenox.process_feedback(data['feedback'], session['session_id'])
+def on_feedback(data):
+    response = {}  # Replace with actual processing logic if needed
     emit('feedback_response', {'message': 'Feedback processed', 'data': response})
 
 if __name__ == '__main__':

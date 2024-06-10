@@ -1,17 +1,21 @@
 import requests
-import logging
 
 class APIIntegration:
-    def __init__(self, api_key):
+    def __init__(self, api_key: str):
         self.api_key = api_key
 
     def call_tavily_search(self, query: str) -> dict:
-        headers = {"Authorization": f"Bearer {self.api_key}"}
-        try:
-            response = requests.post('https://api.tavily.com/search', headers=headers, json={"query": query})
-            response.raise_for_status()
-            logging.debug(f"Tavily response: {response.json()}")
-            return response.json()
-        except requests.exceptions.RequestException as err:
-            logging.error(f"An error occurred: {err}")
-            return {}
+        return perform_tavily_search(query, self.api_key)
+
+def perform_tavily_search(query: str, api_key: str) -> dict:
+       url = "https://api.tavily.com/search"
+       headers = {
+           "Content-Type": "application/json"
+       }
+       data = {
+           "query": query,
+           "api_key": api_key
+       }
+       response = requests.post(url, headers=headers, json=data)
+       response.raise_for_status()
+       return response.json()

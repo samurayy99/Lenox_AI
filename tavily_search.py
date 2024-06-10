@@ -5,7 +5,7 @@ def perform_tavily_search(api_key: str, query: str) -> dict:
     headers = {"Authorization": f"Bearer {api_key}"}
     try:
         response = requests.post('https://api.tavily.com/search', headers=headers, json={"query": query})
-        response.raise_for_status()  # This will raise an exception for HTTP errors
+        response.raise_for_status()
         return response.json()
     except requests.exceptions.HTTPError as http_err:
         logging.error(f"Tavily API HTTP error: {http_err}")

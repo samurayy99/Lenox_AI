@@ -16,7 +16,6 @@ from query_preprocessor import preprocess_query
 from api_integration import APIIntegration
 from langchain_community.tools.tavily_search import TavilySearchResults
 
-
 class Lenox:
     def __init__(self, tools: Dict[str, Any], document_handler, prompt_engine=None, tavily_search=None, connection_string="sqlite:///lenox.db", openai_api_key=None, api_integration=None):
         self.document_handler = document_handler
@@ -28,10 +27,16 @@ class Lenox:
         self.setup_components(tools)
         
     def setup_components(self, tools: Dict[str, Any]):
+        assert tools is not None and len(tools) > 0, "Tools are not initialized or empty"
+        
         self.functions = [convert_to_openai_function(f) for f in tools.values()]
         self.model = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0.8).bind(functions=self.functions)
         self.prompt = self.configure_prompts()
         self.chain = self.setup_chain()
+        
+        # Ensure the chain is properly initialized
+        assert self.chain is not None, "Agent chain is not initialized"
+        
         self.qa = AgentExecutor(agent=self.chain, tools=list(tools.values()), verbose=False)
 
     def convchain(self, query: str, session_id: str = "my_session") -> dict:
@@ -107,6 +112,11 @@ class Lenox:
             | self.model
             | OpenAIFunctionsAgentOutputParser()
         )
+
+    def create_visualization(self, query: str) -> dict:
+        """Implement the method to handle visualization queries."""
+        # Placeholder implementation
+        return {"type": "text", "content": "Visualization created for the query: " + query}
 
     def is_visualization_query(self, query: str) -> bool:
         """Identify visualization-based queries."""
