@@ -1,7 +1,5 @@
-
 import logging
 from typing import Dict, List, Any
-
 from enum import Enum
 
 from query_preprocessor import preprocess_query
@@ -62,8 +60,6 @@ class PromptEngine:
             return IntentType.FEEDBACK
         return IntentType.UNKNOWN
 
-
-
     def generate_emotional_response(self, emotion_support: EmotionLevel) -> str:
         responses = {
             EmotionLevel.ANXIETY: "It's okay, take a deep breath. How can I assist you?",
@@ -106,4 +102,3 @@ class PromptEngine:
 
     def update_tools(self, new_tools: Dict[str, Any]):
         self.tools.update(new_tools)
-

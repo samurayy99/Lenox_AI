@@ -5,7 +5,7 @@ def format_response(response: dict) -> str:
         return format_tavily_results(response['results'])
     return response.get('content', 'No content available.')
 
-def format_tavily_results(search_results: list, max_results: int = 3, content_length: int = 200) -> str:
+def format_tavily_results(search_results: list, max_results: int = 5, content_length: int = 250) -> str:
     if not search_results:
         return "No relevant search results found."
     limited_results = search_results[:max_results]

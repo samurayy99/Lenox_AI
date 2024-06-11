@@ -1,8 +1,8 @@
-# tavily_search.py
 import requests
 import logging
 
 def perform_tavily_search(query: str, api_key: str) -> dict:
+    logging.info(f"Performing Tavily search with query: {query}")
     url = "https://api.tavily.com/search"
     headers = {
         "Authorization": f"Bearer {api_key}",
