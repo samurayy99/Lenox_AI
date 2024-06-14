@@ -1,17 +1,29 @@
-import re
+import logging
 
-def format_response(response: dict) -> str:
-    if 'type' in response and response['type'] == 'search_results':
-        return format_tavily_results(response['results'])
-    return response.get('content', 'No content available.')
+def format_tavily_results(results):
+    """Format the Tavily search results."""
+    formatted_results = ""
+    for result in results:
+        try:
+            formatted_results += f"URL: {result['url']}\nContent: {result['content']}\n\n"
+        except KeyError as e:
+            logging.error(f"Error formatting Tavily result: {e}")
+            formatted_results += "Error formatting result\n\n"
+    return formatted_results
 
-def format_tavily_results(search_results: list, max_results: int = 5, content_length: int = 250) -> str:
-    if not search_results:
-        return "No relevant search results found."
-    limited_results = search_results[:max_results]
-    formatted_results = [f"**[{res['url']}]**\n{extract_title(res['content'])}\n{res['content'][:content_length]}..." for res in limited_results]
-    return "\n\n".join(formatted_results)
+class ResponseFormatter:
+    def format_response(self, response):
+        if not response:
+            return {"results": [], "count": 0}
+        info = self.extract_relevant_info(response)
+        return self.structure_output(info)
 
-def extract_title(content: str) -> str:
-    title_search = re.search(r'(.*?)(?: - |: )', content)
-    return title_search.group(1) if title_search else content.split('\n')[0]
+    def extract_relevant_info(self, response):
+        # Placeholder for actual data extraction logic
+        return response.get("data", [])
+
+    def structure_output(self, info):
+        return {
+            "results": info,
+            "count": len(info)
+        }

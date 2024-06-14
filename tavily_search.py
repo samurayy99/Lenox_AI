@@ -1,22 +1,25 @@
-import requests
-import logging
+# tavily_search.py
 
-def perform_tavily_search(query: str, api_key: str) -> dict:
-    logging.info(f"Performing Tavily search with query: {query}")
-    url = "https://api.tavily.com/search"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-    payload = {"query": query}
+import asyncio
+from tavily_api_client import TavilyAPIClient
 
-    try:
-        response = requests.post(url, headers=headers, json=payload)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.HTTPError as http_err:
-        logging.error(f"Tavily API HTTP error: {http_err}")
-        return {"error": f"Tavily API HTTP error: {http_err}"}
-    except requests.exceptions.RequestException as req_err:
-        logging.error(f"Tavily API request error: {req_err}")
-        return {"error": "Tavily API request error"}
+class TavilySearch:
+    def __init__(self):
+        self.client = TavilyAPIClient()
+
+    async def search(self, query):
+        try:
+            response = await self.client.fetch(query)
+            return self.process_response(response)
+        except asyncio.TimeoutError:
+            print("Request timed out")
+        except Exception as e:
+            print(f"Error during Tavily search: {e}")
+        return None
+
+    def process_response(self, response):
+        # Assuming response is a JSON object that needs processing
+        return response.get('results', [])
+
+    async def close(self):
+        await self.client.close()

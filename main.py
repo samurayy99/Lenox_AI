@@ -14,7 +14,7 @@ import whisper
 from dashboards.dashboard import create_dashboard
 from langchain_community.tools.tavily_search import TavilySearchResults
 from api_integration import APIIntegration
-from response_formatter import format_response
+from query_preprocessor import QueryPreprocessor
 
 # Load environment variables
 load_dotenv()
@@ -49,6 +49,9 @@ tavily_search = TavilySearchResults()
 # Initialize API Integration
 api_integration = APIIntegration(api_key=tavily_api_key or "")
 
+# Initialize the preprocessor
+preprocessor = QueryPreprocessor()
+
 # Initialize Lenox with all necessary components
 lenox = Lenox(
     tools=tools,
@@ -58,6 +61,11 @@ lenox = Lenox(
     openai_api_key=openai_api_key,
     api_integration=api_integration
 )
+
+
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 @app.route('/query', methods=['POST'])
 def handle_query():
@@ -76,20 +84,21 @@ def handle_query():
         app.logger.error(f"Error processing request: {str(e)}")
         return jsonify({'error': 'Failed to process request.'}), 500
 
+
 @app.route('/search', methods=['POST'])
 def search():
     query = request.json.get('query')
     if not query:
         return jsonify({'error': 'Empty query.'}), 400
 
-    try:
-        search_results = lenox.api_integration.call_tavily_search(query)
-        formatted_result = format_response(search_results)
-        app.logger.debug(f"Search results: {search_results}")
-        return jsonify({'type': 'search_results', 'results': formatted_result})
-    except Exception as e:
-        app.logger.error(f"Error during Tavily search: {str(e)}")
+    # Using Lenox's search intent handling
+    search_result = lenox.handle_search_intent(query)
+    if search_result.get('type') == 'error':
+        app.logger.error(f"Error during Tavily search: {search_result.get('content')}")
         return jsonify({'error': 'Search failed.'}), 500
+
+    return jsonify({'type': 'search_results', 'results': search_result.get('content')})
+
 
 @app.route('/dashboard')
 def dashboard_page():
@@ -102,36 +111,8 @@ def log_request():
 
 @app.after_request
 def log_response(response):
-    app.logger.debug(f'Outgoing response: {response.status}')
+    app.logger.debug(f'Outgoing response: {response.status_code}')
     return response
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/audio/<filename>')
-def serve_audio(filename: str):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
-@app.route('/transcribe', methods=['POST'])
-def transcribe_audio():
-    audio_file = request.files.get('file')
-    if not audio_file:
-        return jsonify({'error': 'No file provided'}), 400
-
-    audio_path = secure_filename(audio_file.filename or "")
-    audio_file.save(os.path.join(app.config['UPLOAD_FOLDER'], audio_path))
-
-    result = whisper_model.transcribe(os.path.join(app.config['UPLOAD_FOLDER'], audio_path))
-    transcription = result['text']
-    detected_language = result['language']
-
-    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], audio_path))
-
-    return jsonify({
-        'transcription': transcription,
-        'language': detected_language
-    })
 
 @app.route('/upload', methods=['POST'])
 def upload_document():
@@ -167,7 +148,6 @@ def document_query():
         app.logger.error(f"Error processing document query: {e}")
         return jsonify({'error': 'Failed to process document query.'}), 500
 
-
 @app.route('/synthesize', methods=['POST'])
 def synthesize_speech():
     data = request.get_json()
@@ -199,13 +179,11 @@ def handle_feedback():
     feedback = feedback_data['feedback']
 
     try:
-        # Beispielhafte Verwendung der Variablen
         app.logger.info(f"Received feedback for query: {query}")
         app.logger.info(f"Feedback content: {feedback}")
         return jsonify({'message': 'Feedback processed successfully, and learning was updated.'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 @app.route('/create_visualization', methods=['POST'])
 def create_visualization():

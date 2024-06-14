@@ -9,6 +9,7 @@ from langchain.agents import tool
 # Setup basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+
 # Initialize CoinGecko API client
 cg = CoinGeckoAPI()
 

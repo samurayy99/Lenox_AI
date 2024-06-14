@@ -1,39 +1,47 @@
-import requests
-import logging
+# api_integration.py
+
+from cache_manager import set_cache, get_cache, invalidate_cache
 
 class APIIntegration:
-    def __init__(self, api_key: str):
+    def __init__(self, api_key):
         self.api_key = api_key
 
-    def call_tavily_search(self, query: str) -> dict:
+    def perform_tavily_search(self, query):
+        # Implement the search logic here
+        pass
+
+    def fetch_data(self, endpoint, params):
+        cache_key = self.generate_cache_key(endpoint, params)
+        cached_data = get_cache(cache_key)
+        if cached_data:
+            return cached_data
+
+        response = self.make_request(endpoint, params)
+        if response:
+            set_cache(cache_key, response)
+        return response
+
+    def make_request(self, endpoint, params):
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        # Example using requests
+        import requests
         try:
-            return perform_tavily_search(query, self.api_key)
-        except requests.exceptions.HTTPError as http_err:
-            logging.error(f"Tavily API HTTP error: {http_err}")
-            return {"error": f"Tavily API HTTP error: {http_err}"}
-        except requests.exceptions.RequestException as req_err:
-            logging.error(f"Tavily API request error: {req_err}")
-            return {"error": "Tavily API request error"}
+            response = requests.get(endpoint, headers=headers, params=params)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Failed to fetch data with status {response.status_code}")
+        except requests.RequestException as e:
+            print(f"Request failed: {e}")
+        return {}
 
-def perform_tavily_search(query: str, api_key: str) -> dict:
-    url = "https://api.tavily.com/search"
-    headers = {
-        "Content-Type": "application/json"
-    }
-    data = {
-        "api_key": api_key,
-        "query": query
-    }
+    def generate_cache_key(self, endpoint, params):
+        key = f"{endpoint}:{str(params)}"
+        return key
 
-    logging.debug(f"Sending request to Tavily API: {data}")
-
-    response = requests.post(url, headers=headers, json=data)
-    
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as http_err:
-        logging.error(f"Tavily API HTTP error: {http_err}, Response: {response.text}")
-        raise
-
-    logging.debug(f"Received response from Tavily API: {response.json()}")
-    return response.json()
+    def invalidate_cache(self, endpoint, params):
+        cache_key = self.generate_cache_key(endpoint, params)
+        invalidate_cache(cache_key)

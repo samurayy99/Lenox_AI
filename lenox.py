@@ -1,5 +1,6 @@
+import re
 import logging
-import requests
+from visualize_data import VisualizationConfig, create_visualization
 from typing import Dict, List, Union, Any
 from langchain_core.utils.function_calling import convert_to_openai_function
 from langchain_openai import ChatOpenAI
@@ -10,21 +11,23 @@ from langchain.schema.runnable import RunnablePassthrough
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain.agents.format_scratchpad import format_to_openai_functions
 from lenox_memory import SQLChatMessageHistory
-from prompts import PromptEngine, IntentType
-from visualize_data import VisualizationConfig, create_visualization
-from query_preprocessor import preprocess_query
+from prompts import PromptEngine, PromptEngineConfig
+import requests
+from query_preprocessor import QueryPreprocessor
 from api_integration import APIIntegration
 from langchain_community.tools.tavily_search import TavilySearchResults
 
+# Initialize the preprocessor
+preprocessor = QueryPreprocessor()
 
 class Lenox:
     def __init__(self, tools: Dict[str, Any], document_handler, prompt_engine=None, tavily_search=None, connection_string="sqlite:///lenox.db", openai_api_key=None, api_integration=None):
         self.document_handler = document_handler
-        self.prompt_engine = prompt_engine if prompt_engine else PromptEngine(tools=tools)
+        self.prompt_engine = prompt_engine if prompt_engine else PromptEngine(tools=tools, config=PromptEngineConfig())
         self.tavily_search = tavily_search if tavily_search else TavilySearchResults()
         self.memory = SQLChatMessageHistory(session_id="my_session", connection_string=connection_string)
         self.openai_api_key = openai_api_key
-        self.api_integration = api_integration if api_integration else APIIntegration(api_key=openai_api_key)
+        self.api_integration = api_integration if api_integration else APIIntegration(api_key=openai_api_key or "")
         self.setup_components(tools)
 
     def setup_components(self, tools: Dict[str, Any]):
@@ -39,72 +42,17 @@ class Lenox:
         
         self.qa = AgentExecutor(agent=self.chain, tools=list(tools.values()), verbose=False)
 
+
     def handle_search_intent(self, query: str):
-        processed_query = preprocess_query(query)
-        search_results = self.api_integration.call_tavily_search(processed_query)
-        if 'error' in search_results:
-            return {"type": "ai", "content": search_results['error']}
-        formatted_result = self.format_tavily_results(search_results)
-        return {"type": "ai", "content": formatted_result}
-
-    def convchain(self, query: str, session_id: str = "my_session") -> dict:
-        if not query:
-            return {"type": "text", "content": "Please enter a query."}
-
-        self.memory.session_id = session_id
-        new_message = HumanMessage(content=query)
-        self.memory.add_message(new_message)
-        chat_history = self.memory.messages()
-
-        formatted_chat_history = [
-            {"role": "user", "content": m.content} if isinstance(m, HumanMessage) else {"role": "assistant", "content": m.content}
-            for m in chat_history
-        ]
-
-        processed_query = preprocess_query(query)
-        intent = self.prompt_engine.classify_intent(processed_query)
-
-        logging.debug(f"Processed query: {processed_query}, Intent: {intent}")
-
-        if intent == IntentType.SEARCH:
-            logging.debug("Entering SEARCH intent block")
-            search_results = self.api_integration.call_tavily_search(processed_query)
+        processed_query = self.preprocessor.preprocess(query)
+        if "weather" in processed_query or "news" in processed_query:
+            search_results = self.tavily_search.search(processed_query)
             if 'error' in search_results:
-                return {"type": "ai", "content": search_results['error']}
-            formatted_result = self.format_tavily_results(search_results)
-            logging.debug(f"Formatted result: {formatted_result}")
-            self.memory.add_message(AIMessage(content=formatted_result, type="ai"))
-            return {"type": "ai", "content": formatted_result}
-
-        if intent == IntentType.VISUALIZATION:
-            logging.debug("Entering VISUALIZATION intent block")
-            vis_type = self.parse_visualization_type(query)
-            data = self.fetch_data_for_visualization(query)
-            if not data:
-                return {"type": "error", "content": "Data for visualization could not be fetched."}
-            visualization_config = VisualizationConfig(data=data, visualization_type=vis_type)
-            visualization_json = create_visualization(visualization_config)
-            self.memory.add_message(AIMessage(content=visualization_json, type="ai"))
-            return {"type": "ai", "content": visualization_json}
-
-        logging.debug("Entering default intent block")
-        result = self.qa.invoke({"input": query, "chat_history": formatted_chat_history})
-        output = result.get('output', 'Error processing the request.')
-        if not isinstance(output, str):
-            output = str(output)
-        self.memory.add_message(AIMessage(content=output, type="ai"))
-        return {"type": "ai", "content": output}
-
-    def format_tavily_results(self, results):
-        """Format the Tavily search results."""
-        formatted_results = ""
-        for result in results.get("results", []):  # Ensure correct key is accessed
-            try:
-                formatted_results += f"URL: {result['url']}\nContent: {result['content']}\n\n"
-            except KeyError as e:
-                logging.error(f"Error formatting Tavily result: {e}")
-                formatted_results += "Error formatting result\n\n"
-        return formatted_results
+                return {"type": "error", "content": "Search failed."}
+            return {"type": "ai", "content": search_results}
+        else:
+            # Handle other types of searches or fallback
+            return {"type": "error", "content": "Query type not supported."}
 
     def configure_prompts(self):
         """Configure the prompt template."""
@@ -127,10 +75,41 @@ class Lenox:
             | OpenAIFunctionsAgentOutputParser()
         )
 
-    def create_visualization(self, query: str) -> dict:
-        """Implement the method to handle visualization queries."""
-        # Placeholder implementation
-        return {"type": "text", "content": "Visualization created for the query: " + query}
+    def convchain(self, query: str, session_id: str = "my_session") -> dict:
+        """Process a user query."""
+        if not query:
+            return {"type": "text", "content": "Please enter a query."}
+
+        self.memory.session_id = session_id
+        new_message = HumanMessage(content=query)
+        self.memory.add_message(new_message)
+        chat_history = self.memory.messages()
+
+        # Check for visualization intent
+        if self.is_visualization_query(query):
+            vis_type = self.parse_visualization_type(query)
+            data = self.fetch_data_for_visualization(query)
+            if not data:
+                return {"type": "error", "content": "Data for visualization could not be fetched."}
+            visualization_config = VisualizationConfig(data=data, visualization_type=vis_type)
+            visualization_json = create_visualization(visualization_config)
+            self.memory.add_message(AIMessage(content=visualization_json))
+            return self.create_response(visualization_json, "visual")
+
+        # Enhanced intent recognition for search using regex
+        if re.search(r"\b(search for|find|lookup|where can i find)\b", query, re.IGNORECASE):
+            return {"type": "text", "content": "Search tool is not configured."}
+
+        # General conversational handling via QA invocation
+        result = self.qa.invoke({"input": query, "chat_history": chat_history})
+        output = result.get('output', 'Error processing the request.')
+
+        # Ensure output is a string
+        if not isinstance(output, str):
+            output = str(output)
+
+        self.memory.add_message(AIMessage(content=output))
+        return {"type": "text", "content": output}
 
     def is_visualization_query(self, query: str) -> bool:
         """Identify visualization-based queries."""
@@ -162,7 +141,7 @@ class Lenox:
         """Create a structured response."""
         if response_type == "visual":
             return {"type": response_type, "content": content}
-        return {"type": "text", "content": str(content)}
+        return {"type": response_type, "content": str(content)}
 
     def handle_document_query(self, query: str) -> str:
         """Query the document index."""
@@ -191,3 +170,14 @@ class Lenox:
         else:
             print(f"Failed to synthesize audio: {response.status_code}, {response.text}")
             return None
+        
+    def format_tavily_results(self, results):
+        """Format the Tavily search results."""
+        formatted_results = ""
+        for result in results.get("results", []):  # Ensure correct key is accessed
+            try:
+                formatted_results += f"URL: {result['url']}\nContent: {result['content']}\n\n"
+            except KeyError as e:
+                logging.error(f"Error formatting Tavily result: {e}")
+                formatted_results += "Error formatting result\n\n"
+        return formatted_results

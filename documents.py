@@ -3,7 +3,7 @@ import logging
 from werkzeug.utils import secure_filename
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext, load_index_from_storage
 from llama_index.core.langchain_helpers.agents import IndexToolConfig, LlamaIndexTool
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from llama_index.embeddings.langchain import LangchainEmbedding
 
 
