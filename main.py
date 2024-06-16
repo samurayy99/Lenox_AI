@@ -12,16 +12,13 @@ from werkzeug.utils import secure_filename
 from tool_imports import import_tools
 import whisper
 from dashboards.dashboard import create_dashboard
-from langchain_community.tools.tavily_search import TavilySearchResults
-from api_integration import APIIntegration
-from query_preprocessor import QueryPreprocessor
+from tavily_search import get_tavily_search_tool
 
 # Load environment variables
 load_dotenv()
 app = Flask(__name__)
 whisper_model = whisper.load_model("base")
 openai_api_key = os.getenv('OPENAI_API_KEY')
-tavily_api_key = os.getenv('TAVILY_API_KEY')
 CORS(app)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'my_secret_key')
 app.config['UPLOAD_FOLDER'] = '/Users/lenox27/LENOX/documents'
@@ -44,13 +41,7 @@ prompt_engine_config = PromptEngineConfig(context_length=10, max_tokens=4096)
 prompt_engine = PromptEngine(config=prompt_engine_config, tools=tools)
 
 # Initialize Tavily Search tool
-tavily_search = TavilySearchResults()
-
-# Initialize API Integration
-api_integration = APIIntegration(api_key=tavily_api_key or "")
-
-# Initialize the preprocessor
-preprocessor = QueryPreprocessor()
+tavily_search = get_tavily_search_tool()
 
 # Initialize Lenox with all necessary components
 lenox = Lenox(
@@ -58,8 +49,7 @@ lenox = Lenox(
     document_handler=document_handler,
     prompt_engine=prompt_engine,
     tavily_search=tavily_search,
-    openai_api_key=openai_api_key,
-    api_integration=api_integration
+    openai_api_key=openai_api_key
 )
 
 
@@ -77,27 +67,12 @@ def handle_query():
             app.logger.debug("No query provided in the request.")
             return jsonify({'error': 'Empty query.'}), 400
 
-        result = lenox.convchain(query, session['session_id'])
-        app.logger.debug(f"Processed query with convchain, result: {result}")
+        result = lenox.handle_query(query, session['session_id'])
+        app.logger.debug(f"Processed query with handle_query, result: {result}")
         return jsonify(result)
     except Exception as e:
         app.logger.error(f"Error processing request: {str(e)}")
         return jsonify({'error': 'Failed to process request.'}), 500
-
-
-@app.route('/search', methods=['POST'])
-def search():
-    query = request.json.get('query')
-    if not query:
-        return jsonify({'error': 'Empty query.'}), 400
-
-    # Using Lenox's search intent handling
-    search_result = lenox.handle_search_intent(query)
-    if search_result.get('type') == 'error':
-        app.logger.error(f"Error during Tavily search: {search_result.get('content')}")
-        return jsonify({'error': 'Search failed.'}), 500
-
-    return jsonify({'type': 'search_results', 'results': search_result.get('content')})
 
 
 @app.route('/dashboard')

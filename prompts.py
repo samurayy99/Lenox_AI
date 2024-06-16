@@ -1,9 +1,8 @@
 import logging
 from typing import Dict, List, Any
 from enum import Enum
-from query_preprocessor import QueryPreprocessor
-from api_integration import APIIntegration
-from response_formatter import format_tavily_results
+import re
+from tavily_search import get_tavily_search_tool
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -40,21 +39,24 @@ class PromptEngine:
     def __init__(self, config: PromptEngineConfig, tools: Dict[str, Any] = None, api_key: str = ""):
         self.config = config
         self.tools: Dict[str, Any] = tools or {}
-        self.api_integration = APIIntegration(api_key)
-        self.preprocessor = QueryPreprocessor()
+        self.tavily_tool = get_tavily_search_tool()
+        self.tools.update({"tavily_search": self.tavily_tool})
 
     def preprocess_query(self, user_query: str) -> str:
-        result = self.preprocessor.preprocess(user_query)
-        if result is None:
-            return ""
-        return result
+        query = user_query.strip().lower()
+        query = re.sub(r'\s+', ' ', query)
+        query = re.sub(r'[^\w\s]', '', query)
+        stopwords = {'the', 'is', 'in', 'and', 'to', 'of'}
+        query_words = query.split()
+        filtered_words = [word for word in query_words if word not in stopwords]
+        return ' '.join(filtered_words)
 
     def search_response_v2(self, user_query: str) -> Dict[str, Any]:
         try:
             query = self.preprocess_query(user_query)
-            results = self.api_integration.perform_tavily_search(query)
+            results = self.tavily_tool.invoke({"query": query})
             if results:
-                formatted_results = format_tavily_results(results.get("results", []))
+                formatted_results = self.format_tavily_results(results)
                 return {"response": formatted_results}
             else:
                 return {"response": "No search results found."}
@@ -64,10 +66,11 @@ class PromptEngine:
     
     def classify_intent(self, user_query: str) -> IntentType:
         user_query = user_query.lower()
+        search_keywords = ["search", "find", "lookup", "current", "latest", "information"]
+        if any(keyword in user_query for keyword in search_keywords):
+            return IntentType.SEARCH
         if any(greeting in user_query for greeting in ["hi", "hello", "hey"]):
             return IntentType.GREETING
-        if any(search in user_query for search in ["search", "find", "what is", "how to", "weather"]):
-            return IntentType.SEARCH
         if any(visual in user_query for visual in ["visualize", "graph", "chart", "plot"]):
             return IntentType.VISUALIZATION
         if any(smalltalk in user_query for smalltalk in ["how are you", "what's up"]):
@@ -139,6 +142,17 @@ class PromptEngine:
         if "calm" in user_query or "relaxed" in user_query:
             return EmotionLevel.CALM
         return EmotionLevel.LOW
+
+    def format_tavily_results(self, results):
+        """Format the Tavily search results."""
+        formatted_results = ""
+        for result in results:
+            try:
+                formatted_results += f"URL: {result['url']}\nContent: {result['content']}\n\n"
+            except KeyError as e:
+                logger.error(f"Error formatting Tavily result: {e}")
+                formatted_results += "Error formatting result\n\n"
+        return formatted_results
 
     def fetch_response_from_model(self, prompt: str) -> str:
         # Placeholder for model fetching logic
