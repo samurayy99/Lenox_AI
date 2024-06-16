@@ -9,15 +9,6 @@ from response_formatter import format_tavily_results
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-# Initialize the preprocessor
-preprocessor = QueryPreprocessor()
-
-# Define user_query
-user_query = "example query"
-
-# Use the preprocessor in your code
-processed_query = preprocessor.preprocess(user_query)
-
 class IntentType(Enum):
     GREETING = "greeting"
     SEARCH = "search"
@@ -49,17 +40,24 @@ class PromptEngine:
     def __init__(self, config: PromptEngineConfig, tools: Dict[str, Any] = None, api_key: str = ""):
         self.config = config
         self.tools: Dict[str, Any] = tools or {}
-        self.api_integration = APIIntegration(api_key)  # Instantiate APIIntegration
+        self.api_integration = APIIntegration(api_key)
+        self.preprocessor = QueryPreprocessor()
 
     def preprocess_query(self, user_query: str) -> str:
-        return preprocessor.preprocess(user_query)
+        result = self.preprocessor.preprocess(user_query)
+        if result is None:
+            return ""
+        return result
 
     def search_response_v2(self, user_query: str) -> Dict[str, Any]:
         try:
             query = self.preprocess_query(user_query)
             results = self.api_integration.perform_tavily_search(query)
-            formatted_results = format_tavily_results(results.get("results", []))
-            return {"response": formatted_results}
+            if results:
+                formatted_results = format_tavily_results(results.get("results", []))
+                return {"response": formatted_results}
+            else:
+                return {"response": "No search results found."}
         except Exception as e:
             logger.error(f"Error during search response: {e}")
             return {"response": "An error occurred while processing your search request."}
@@ -103,7 +101,7 @@ class PromptEngine:
         intent = self.classify_intent(user_query)
         logger.debug(f"Classified intent: {intent}")
         if intent == IntentType.SEARCH:
-            return self.search_response_v2(user_query)  # Ensure correct method is called
+            return self.search_response_v2(user_query)
         elif intent == IntentType.VISUALIZATION:
             return self.visualization_response(user_query)
         elif intent == IntentType.EMOTIONAL_SUPPORT:
@@ -127,13 +125,11 @@ class PromptEngine:
         return {"response": "Visualization is not implemented yet."}
 
     def emotional_support_response(self, user_query: str) -> Dict[str, Any]:
-        # Implement emotional support logic here
         emotion_level = self.detect_emotion_level(user_query)
         emotional_response = self.generate_emotional_response(emotion_level)
         return {"response": emotional_response}
 
     def detect_emotion_level(self, user_query: str) -> EmotionLevel:
-        # Implement a method to detect the user's emotion level based on the query
         if "anxious" in user_query or "nervous" in user_query:
             return EmotionLevel.ANXIETY
         if "excited" in user_query or "thrilled" in user_query:
@@ -150,7 +146,7 @@ class PromptEngine:
 
     def add_interaction(self, input: str, response: str):
         # Placeholder for interaction logging logic
-        logging.debug(f"Interaction logged: {input} -> {response}")
+        logger.debug(f"Interaction logged: {input} -> {response}")
 
     def update_tools(self, new_tools: Dict[str, Any]):
         self.tools.update(new_tools)

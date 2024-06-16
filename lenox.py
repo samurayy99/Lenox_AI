@@ -13,12 +13,9 @@ from langchain.agents.format_scratchpad import format_to_openai_functions
 from lenox_memory import SQLChatMessageHistory
 from prompts import PromptEngine, PromptEngineConfig
 import requests
-from query_preprocessor import QueryPreprocessor
-from api_integration import APIIntegration
 from langchain_community.tools.tavily_search import TavilySearchResults
+from api_integration import APIIntegration
 
-# Initialize the preprocessor
-preprocessor = QueryPreprocessor()
 
 class Lenox:
     def __init__(self, tools: Dict[str, Any], document_handler, prompt_engine=None, tavily_search=None, connection_string="sqlite:///lenox.db", openai_api_key=None, api_integration=None):

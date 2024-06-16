@@ -1,10 +1,10 @@
 # api_integration.py
-
+import os
 from cache_manager import set_cache, get_cache, invalidate_cache
 
 class APIIntegration:
-    def __init__(self, api_key):
-        self.api_key = api_key
+    def __init__(self, api_key=None):
+        self.api_key = api_key or os.getenv("API_KEY")
 
     def perform_tavily_search(self, query):
         # Implement the search logic here
