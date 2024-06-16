@@ -15,20 +15,30 @@ import requests
 from tavily_search import get_tavily_search_tool
 from langchain.tools.base import BaseTool
 
-
 class RunnableAgentAdapter(BaseTool):
-    def __init__(self, runnable):
+    runnable: Callable
+    name: str
+    description: str
+
+    def __init__(self, runnable: Callable, name: str = "RunnableTool", description: str = "A tool that wraps a callable runnable"):
+        super().__init__(name=name, description=description)
         self.runnable = runnable
 
     def _run(self, input_data: Dict[str, Any]) -> Union[str, Dict[str, Any]]:
         # Implement the logic to adapt the runnable's execution to the agent's expected interface
         return self.runnable(input_data)
 
+    async def _arun(self, input_data: Dict[str, Any]) -> Union[str, Dict[str, Any]]:
+        # Implement the async logic if necessary
+        return await self.runnable(input_data)
+
 class Lenox:
-    def __init__(self, tools: Dict[str, Any], document_handler, prompt_engine=None, tavily_search=None, connection_string="sqlite:///lenox.db", openai_api_key=None):
+    def __init__(self, tools: Dict[str, Any], document_handler, prompt_engine=None, tavily_search=None, connection_string="sqlite:///lenox.db", openai_api_key=None, tavily_api_key=None):
         self.document_handler = document_handler
         self.prompt_engine = prompt_engine if prompt_engine else PromptEngine(config=PromptEngineConfig(), tools=tools)
-        self.tavily_search = tavily_search if tavily_search else get_tavily_search_tool()
+        if not tavily_api_key:
+            raise ValueError("Tavily API key is required")
+        self.tavily_search = tavily_search if tavily_search else get_tavily_search_tool(api_key=tavily_api_key)
         self.memory = SQLChatMessageHistory(session_id="my_session", connection_string=connection_string)
         self.openai_api_key = openai_api_key
         self.setup_components(tools)
@@ -43,8 +53,16 @@ class Lenox:
     
         assert self.chain is not None, "Agent chain is not initialized"
     
-        adapted_tools = [RunnableAgentAdapter(tool) if isinstance(tool, Callable) else tool for tool in tools.values()]
+        adapted_tools = [RunnableAgentAdapter(tool, name=name, description="Wrapped callable tool") if isinstance(tool, Callable) else tool for name, tool in tools.items()]
         self.qa = AgentExecutor(agent=self.chain, tools=[tool for tool in adapted_tools if isinstance(tool, BaseTool)], verbose=False)
+
+        # Debugging statements
+        print(f"Functions: {self.functions}")
+        print(f"Model: {self.model}")
+        print(f"Prompt: {self.prompt}")
+        print(f"Chain: {self.chain}")
+        print(f"Adapted Tools: {adapted_tools}")
+        print(f"QA: {self.qa}")
 
     def handle_query(self, query: str, session_id: str = "my_session") -> dict:
         """Process a user query."""

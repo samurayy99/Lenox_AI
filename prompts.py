@@ -39,7 +39,7 @@ class PromptEngine:
     def __init__(self, config: PromptEngineConfig, tools: Dict[str, Any] = None, api_key: str = ""):
         self.config = config
         self.tools: Dict[str, Any] = tools or {}
-        self.tavily_tool = get_tavily_search_tool()
+        self.tavily_tool = get_tavily_search_tool(api_key=api_key)
         self.tools.update({"tavily_search": self.tavily_tool})
 
     def preprocess_query(self, user_query: str) -> str:
@@ -146,7 +146,7 @@ class PromptEngine:
     def format_tavily_results(self, results):
         """Format the Tavily search results."""
         formatted_results = ""
-        for result in results:
+        for result in results.get("results", []):  # Ensure correct key is accessed
             try:
                 formatted_results += f"URL: {result['url']}\nContent: {result['content']}\n\n"
             except KeyError as e:

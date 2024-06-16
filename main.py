@@ -12,13 +12,18 @@ from werkzeug.utils import secure_filename
 from tool_imports import import_tools
 import whisper
 from dashboards.dashboard import create_dashboard
-from tavily_search import get_tavily_search_tool
 
 # Load environment variables
 load_dotenv()
 app = Flask(__name__)
 whisper_model = whisper.load_model("base")
 openai_api_key = os.getenv('OPENAI_API_KEY')
+tavily_api_key = os.getenv('TAVILY_API_KEY')
+
+# Ensure tavily_api_key is not None
+if tavily_api_key is None:
+    raise ValueError("TAVILY_API_KEY environment variable is not set")
+
 CORS(app)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'my_secret_key')
 app.config['UPLOAD_FOLDER'] = '/Users/lenox27/LENOX/documents'
@@ -38,18 +43,16 @@ tools = {"tool_{}".format(i): tool for i, tool in enumerate(tools)}
 # Create instances of your components
 document_handler = DocumentHandler(document_folder="documents", data_folder="data")
 prompt_engine_config = PromptEngineConfig(context_length=10, max_tokens=4096)
-prompt_engine = PromptEngine(config=prompt_engine_config, tools=tools)
-
-# Initialize Tavily Search tool
-tavily_search = get_tavily_search_tool()
+prompt_engine = PromptEngine(config=prompt_engine_config, tools=tools, api_key=tavily_api_key)
 
 # Initialize Lenox with all necessary components
 lenox = Lenox(
     tools=tools,
     document_handler=document_handler,
     prompt_engine=prompt_engine,
-    tavily_search=tavily_search,
-    openai_api_key=openai_api_key
+    tavily_search=prompt_engine.tavily_tool,
+    openai_api_key=openai_api_key,
+    tavily_api_key=tavily_api_key  # Ensure the tavily_api_key is passed here
 )
 
 @app.route('/')
