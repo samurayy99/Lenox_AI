@@ -1,6 +1,6 @@
 import logging
 from visualize_data import VisualizationConfig, create_visualization
-from typing import Dict, List, Union, Any
+from typing import Dict, List, Union, Any, Callable
 from langchain_core.utils.function_calling import convert_to_openai_function
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -10,9 +10,19 @@ from langchain.schema.runnable import RunnablePassthrough
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain.agents.format_scratchpad import format_to_openai_functions
 from lenox_memory import SQLChatMessageHistory
-from prompts import PromptEngine, PromptEngineConfig
+from prompts import PromptEngine, PromptEngineConfig, IntentType
 import requests
 from tavily_search import get_tavily_search_tool
+from langchain.tools.base import BaseTool
+
+
+class RunnableAgentAdapter(BaseTool):
+    def __init__(self, runnable):
+        self.runnable = runnable
+
+    def _run(self, input_data: Dict[str, Any]) -> Union[str, Dict[str, Any]]:
+        # Implement the logic to adapt the runnable's execution to the agent's expected interface
+        return self.runnable(input_data)
 
 class Lenox:
     def __init__(self, tools: Dict[str, Any], document_handler, prompt_engine=None, tavily_search=None, connection_string="sqlite:///lenox.db", openai_api_key=None):
@@ -25,15 +35,16 @@ class Lenox:
 
     def setup_components(self, tools: Dict[str, Any]):
         assert tools is not None and len(tools) > 0, "Tools are not initialized or empty"
-        
-        self.functions = [convert_to_openai_function(f) for f in tools.values()]
+    
+        self.functions = {name: convert_to_openai_function(tool) if isinstance(tool, Callable) else tool for name, tool in tools.items()}
         self.model = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0.8).bind(functions=self.functions)
         self.prompt = self.configure_prompts()
         self.chain = self.setup_chain()
-        
+    
         assert self.chain is not None, "Agent chain is not initialized"
-        
-        self.qa = AgentExecutor(agent=self.chain, tools=list(tools.values()), verbose=False)
+    
+        adapted_tools = [RunnableAgentAdapter(tool) if isinstance(tool, Callable) else tool for tool in tools.values()]
+        self.qa = AgentExecutor(agent=self.chain, tools=[tool for tool in adapted_tools if isinstance(tool, BaseTool)], verbose=False)
 
     def handle_query(self, query: str, session_id: str = "my_session") -> dict:
         """Process a user query."""
@@ -50,7 +61,6 @@ class Lenox:
         if intent == IntentType.SEARCH:
             return self.handle_search_intent(query)
         
-        # Check for visualization intent
         if self.is_visualization_query(query):
             vis_type = self.parse_visualization_type(query)
             data = self.fetch_data_for_visualization(query)
@@ -61,14 +71,8 @@ class Lenox:
             self.memory.add_message(AIMessage(content=visualization_json))
             return self.create_response(visualization_json, "visual")
 
-        # General conversational handling via QA invocation
         result = self.qa.invoke({"input": query, "chat_history": chat_history})
         output = result.get('output', 'Error processing the request.')
-
-        # Ensure output is a string
-        if not isinstance(output, str):
-            output = str(output)
-
         self.memory.add_message(AIMessage(content=output))
         return {"type": "text", "content": output}
 
@@ -129,8 +133,8 @@ class Lenox:
     def create_response(self, content, response_type="text") -> dict:
         """Create a structured response."""
         if response_type == "visual":
-            return {"type": response_type, "content": content}
-        return {"type": response_type, "content": str(content)}
+            return {"type": "visual", "content": content}
+        return {"type": "text", "content": str(content)}
 
     def handle_document_query(self, query: str) -> str:
         """Query the document index."""

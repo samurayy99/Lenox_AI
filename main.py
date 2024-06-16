@@ -33,7 +33,7 @@ app.logger.addHandler(handler)
 
 # Import tools before they are used
 tools = import_tools()
-tools = {f"tool_{i}": tool for i, tool in enumerate(tools)}
+tools = {"tool_{}".format(i): tool for i, tool in enumerate(tools)}
 
 # Create instances of your components
 document_handler = DocumentHandler(document_folder="documents", data_folder="data")
@@ -51,7 +51,6 @@ lenox = Lenox(
     tavily_search=tavily_search,
     openai_api_key=openai_api_key
 )
-
 
 @app.route('/')
 def index():
@@ -73,7 +72,6 @@ def handle_query():
     except Exception as e:
         app.logger.error(f"Error processing request: {str(e)}")
         return jsonify({'error': 'Failed to process request.'}), 500
-
 
 @app.route('/dashboard')
 def dashboard_page():
