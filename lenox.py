@@ -1,17 +1,16 @@
 import logging
 from visualize_data import VisualizationConfig, create_visualization
 from typing import Dict, List, Union, Any, Callable
-from langchain_core.utils.function_calling import convert_to_openai_function
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
-from langchain.agents import AgentExecutor
 from langchain.schema.runnable import RunnablePassthrough
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain.agents.format_scratchpad import format_to_openai_functions
 from lenox_memory import SQLChatMessageHistory
 from prompts import PromptEngine, PromptEngineConfig, IntentType
 import requests
+from langchain.agents import AgentExecutor
 from tavily_search import get_tavily_search_tool
 from langchain.tools.base import BaseTool
 
@@ -25,44 +24,59 @@ class RunnableAgentAdapter(BaseTool):
         self.runnable = runnable
 
     def _run(self, input_data: Dict[str, Any]) -> Union[str, Dict[str, Any]]:
-        # Implement the logic to adapt the runnable's execution to the agent's expected interface
         return self.runnable(input_data)
 
     async def _arun(self, input_data: Dict[str, Any]) -> Union[str, Dict[str, Any]]:
-        # Implement the async logic if necessary
         return await self.runnable(input_data)
+
 
 class Lenox:
     def __init__(self, tools: Dict[str, Any], document_handler, prompt_engine=None, tavily_search=None, connection_string="sqlite:///lenox.db", openai_api_key=None, tavily_api_key=None):
         self.document_handler = document_handler
         self.prompt_engine = prompt_engine if prompt_engine else PromptEngine(config=PromptEngineConfig(), tools=tools)
+        self.prompt = self.configure_prompts()
         if not tavily_api_key:
             raise ValueError("Tavily API key is required")
         self.tavily_search = tavily_search if tavily_search else get_tavily_search_tool(api_key=tavily_api_key)
         self.memory = SQLChatMessageHistory(session_id="my_session", connection_string=connection_string)
         self.openai_api_key = openai_api_key
+        if self.openai_api_key:
+            self.model = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0.8)
+        else:
+            raise ValueError("OpenAI API key is required")
         self.setup_components(tools)
+        self.chain = self.setup_chain()
 
     def setup_components(self, tools: Dict[str, Any]):
-        assert tools is not None and len(tools) > 0, "Tools are not initialized or empty"
-    
-        self.functions = {name: convert_to_openai_function(tool) if isinstance(tool, Callable) else tool for name, tool in tools.items()}
-        self.model = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0.8).bind(functions=self.functions)
-        self.prompt = self.configure_prompts()
-        self.chain = self.setup_chain()
-    
-        assert self.chain is not None, "Agent chain is not initialized"
-    
-        adapted_tools = [RunnableAgentAdapter(tool, name=name, description="Wrapped callable tool") if isinstance(tool, Callable) else tool for name, tool in tools.items()]
-        self.qa = AgentExecutor(agent=self.chain, tools=[tool for tool in adapted_tools if isinstance(tool, BaseTool)], verbose=False)
+        logging.debug("Starting setup of components with provided tools.")
+        adapted_tools = {}
+        for name, tool in tools.items():
+            if callable(tool):
+                try:
+                    adapted_tools[name] = RunnableAgentAdapter(runnable=tool, name=name, description="Wrapped callable tool")
+                except Exception as e:
+                    logging.error(f"Failed to wrap tool {name}: {e}")
+            else:
+                logging.warning(f"Tool {name} is not callable and will not be wrapped.")
+        self.functions = {name: tool for name, tool in adapted_tools.items() if isinstance(tool, BaseTool)}
+        if self.functions:
+            self.model = ChatOpenAI(model="gpt-3.5-turbo-0301", temperature=0.8)
+            self.model = self.model.bind(functions=self.functions)  # Ensure model is bound here
+        if self.model is None:
+            raise AttributeError("Model has not been initialized")
+        self.qa = AgentExecutor(agent=self.setup_chain(), tools=[tool for tool in adapted_tools.values() if isinstance(tool, BaseTool)], verbose=False)
 
-        # Debugging statements
-        print(f"Functions: {self.functions}")
-        print(f"Model: {self.model}")
-        print(f"Prompt: {self.prompt}")
-        print(f"Chain: {self.chain}")
-        print(f"Adapted Tools: {adapted_tools}")
-        print(f"QA: {self.qa}")
+    def setup_chain(self):
+        if self.prompt is None:
+            self.prompt = self.configure_prompts()
+        return (
+            RunnablePassthrough.assign(
+                agent_scratchpad=lambda x: format_to_openai_functions(x.get("intermediate_steps", []))
+            )
+            | self.prompt
+            | self.model
+            | OpenAIFunctionsAgentOutputParser()
+        )
 
     def handle_query(self, query: str, session_id: str = "my_session") -> dict:
         """Process a user query."""
@@ -110,17 +124,6 @@ class Lenox:
             ("user", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad"),
         ])
-
-    def setup_chain(self):
-        """Set up the agent chain."""
-        return (
-            RunnablePassthrough.assign(
-                agent_scratchpad=lambda x: format_to_openai_functions(x.get("intermediate_steps", []))
-            )
-            | self.prompt
-            | self.model
-            | OpenAIFunctionsAgentOutputParser()
-        )
 
     def is_visualization_query(self, query: str) -> bool:
         """Identify visualization-based queries."""
