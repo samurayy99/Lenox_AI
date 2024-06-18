@@ -2,7 +2,6 @@ import logging
 from typing import Dict, List, Any
 from enum import Enum
 import re
-from tavily_search import get_tavily_search_tool
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -36,11 +35,9 @@ class PromptEngineConfig:
         self.max_tokens = max_tokens
 
 class PromptEngine:
-    def __init__(self, config: PromptEngineConfig, tools: Dict[str, Any] = None, api_key: str = ""):
+    def __init__(self, config: PromptEngineConfig, tools: List[Any] = None):
         self.config = config
-        self.tools: Dict[str, Any] = tools or {}
-        self.tavily_tool = get_tavily_search_tool(api_key=api_key)
-        self.tools.update({"tavily_search": self.tavily_tool})
+        self.tools = {f"tool_{i}": tool for i, tool in enumerate(tools)} if tools else {}
 
     def preprocess_query(self, user_query: str) -> str:
         query = user_query.strip().lower()
@@ -51,19 +48,6 @@ class PromptEngine:
         filtered_words = [word for word in query_words if word not in stopwords]
         return ' '.join(filtered_words)
 
-    def search_response_v2(self, user_query: str) -> Dict[str, Any]:
-        try:
-            query = self.preprocess_query(user_query)
-            results = self.tavily_tool.invoke({"query": query})
-            if results:
-                formatted_results = self.format_tavily_results(results)
-                return {"response": formatted_results}
-            else:
-                return {"response": "No search results found."}
-        except Exception as e:
-            logger.error(f"Error during search response: {e}")
-            return {"response": "An error occurred while processing your search request."}
-    
     def classify_intent(self, user_query: str) -> IntentType:
         user_query = user_query.lower()
         search_keywords = ["search", "find", "lookup", "current", "latest", "information"]
@@ -104,7 +88,7 @@ class PromptEngine:
         intent = self.classify_intent(user_query)
         logger.debug(f"Classified intent: {intent}")
         if intent == IntentType.SEARCH:
-            return self.search_response_v2(user_query)
+            return {"response": "Search functionality is not implemented."}
         elif intent == IntentType.VISUALIZATION:
             return self.visualization_response(user_query)
         elif intent == IntentType.EMOTIONAL_SUPPORT:
@@ -142,17 +126,6 @@ class PromptEngine:
         if "calm" in user_query or "relaxed" in user_query:
             return EmotionLevel.CALM
         return EmotionLevel.LOW
-
-    def format_tavily_results(self, results):
-        """Format the Tavily search results."""
-        formatted_results = ""
-        for result in results.get("results", []):  # Ensure correct key is accessed
-            try:
-                formatted_results += f"URL: {result['url']}\nContent: {result['content']}\n\n"
-            except KeyError as e:
-                logger.error(f"Error formatting Tavily result: {e}")
-                formatted_results += "Error formatting result\n\n"
-        return formatted_results
 
     def fetch_response_from_model(self, prompt: str) -> str:
         # Placeholder for model fetching logic
