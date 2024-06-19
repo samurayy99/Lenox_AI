@@ -68,18 +68,23 @@ async function submitQuery() {
     queryInput.value = '';
     showLoadingIndicator(true);
 
-    const response = await fetch('/query', {  // Corrected endpoint
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query })
-    });
+    try {
+        const response = await fetch('/query', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query })
+        });
 
-    if (!response.ok) {
-        console.error('Error fetching response:', response.statusText);
-        appendMessage(`An error occurred: ${response.statusText}`, 'error-message');
-    } else {
-        const data = await response.json();
-        processResponseData(data);
+        if (!response.ok) {
+            console.error('Error fetching response:', response.statusText);
+            appendMessage(`An error occurred: ${response.statusText}`, 'error-message');
+        } else {
+            const data = await response.json();
+            processResponseData(data);
+        }
+    } catch (error) {
+        console.error('Error processing response:', error);
+        appendMessage('An error occurred while processing the response.', 'error-message');
     }
     showLoadingIndicator(false);
 }
@@ -87,7 +92,7 @@ async function submitQuery() {
 function appendMessage(message, className, shouldIncludeAudio = false) {
     const chatMessages = document.getElementById('chat-messages');
     const messageDiv = document.createElement('div');
-    messageDiv.classList.add(className);
+    messageDiv.classList.add('chat-message', className);
 
     message = convertUrlsToLinks(message);
 
@@ -96,13 +101,19 @@ function appendMessage(message, className, shouldIncludeAudio = false) {
     if (shouldIncludeAudio && className === 'bot-message') {
         const button = document.createElement('button');
         button.textContent = 'Play';
+        button.classList.add('play-button'); // Add a class to the play button for styling
         button.onclick = () => fetchAudio(message);
         messageDiv.appendChild(button);
+    }
+
+    if (className === 'bot-message') {
+        addFeedbackButtons(messageDiv, message); // Add feedback buttons only to bot messages
     }
 
     chatMessages.appendChild(messageDiv);
     scrollToLatestMessage();
 }
+
 
 document.querySelectorAll('.dropdown-content a').forEach(item => {
     item.addEventListener('click', function (e) {
@@ -153,10 +164,9 @@ function handleVisualResponse(data) {
     const visualizationContainer = appendVisualizationPlaceholder();
     if (data.content && visualizationContainer) {
         try {
-            const visualizationData = JSON.parse(data.content);
-            Plotly.newPlot(visualizationContainer, visualizationData.data, visualizationData.layout);
+            Plotly.newPlot(visualizationContainer, data.content.data, data.content.layout);
         } catch (e) {
-            console.error('Error parsing visualization data:', e);
+            console.error('Error rendering visualization:', e);
             appendMessage('An error occurred while rendering the visualization.', 'error-message');
         }
     } else {
@@ -175,7 +185,7 @@ function appendVisualizationPlaceholder() {
 function processResponseData(data) {
     console.log("Received data from server:", data);
     switch (data.type) {
-        case 'visual':
+        case 'visualization':
             handleVisualResponse(data);
             break;
         case 'text':
@@ -208,4 +218,38 @@ function scrollToLatestMessage() {
 function showLoadingIndicator(isLoading) {
     const loadingIndicator = document.getElementById('loadingIndicator');
     loadingIndicator.style.display = isLoading ? 'block' : 'none';
+}
+
+function addFeedbackButtons(messageElement, messageContent) {
+    const feedbackButtons = document.createElement('div');
+    feedbackButtons.className = 'feedback-buttons';
+
+    const thumbsUp = document.createElement('button');
+    thumbsUp.className = 'thumbs-up';
+    thumbsUp.onclick = () => sendFeedback(messageContent, 'positive');
+    feedbackButtons.appendChild(thumbsUp);
+
+    const thumbsDown = document.createElement('button');
+    thumbsDown.className = 'thumbs-down';
+    thumbsDown.onclick = () => sendFeedback(messageContent, 'negative');
+    feedbackButtons.appendChild(thumbsDown);
+
+    messageElement.appendChild(feedbackButtons);
+}
+
+function sendFeedback(query, feedback) {
+    fetch('/feedback', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query, feedback }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Feedback sent:', data);
+    })
+    .catch((error) => {
+        console.error('Error sending feedback:', error);
+    });
 }

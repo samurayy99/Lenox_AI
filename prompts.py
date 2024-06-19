@@ -35,9 +35,9 @@ class PromptEngineConfig:
         self.max_tokens = max_tokens
 
 class PromptEngine:
-    def __init__(self, config: PromptEngineConfig, tools: List[Any] = None):
+    def __init__(self, config: PromptEngineConfig, tools: List[Any] = []):
         self.config = config
-        self.tools = {f"tool_{i}": tool for i, tool in enumerate(tools)} if tools else {}
+        self.tools = {f"tool_{i}": tool for i, tool in enumerate(tools)}
 
     def preprocess_query(self, user_query: str) -> str:
         query = user_query.strip().lower()

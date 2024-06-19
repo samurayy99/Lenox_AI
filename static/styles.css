@@ -23,14 +23,12 @@ html {
   position: relative;
 }
 
-
 /* Chat Messages */
 .chat-messages {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 10px;
-  /* Reduced padding to expand chat message area */
   overflow-y: auto;
   background-color: #f0f5fc;
   flex-grow: 1;
@@ -41,12 +39,10 @@ html {
   display: flex;
   align-items: center;
   padding: 5px;
-  /* Reduced padding for a slimmer input area */
   background-color: #add8e6;
   border-top: 2px solid #b0c4de;
   flex-direction: column;
   gap: 5px;
-  /* Reduced gap between elements */
 }
 
 /* Chat Input */
@@ -68,7 +64,6 @@ button {
   background-color: #add8e6;
   border: 1px solid #b0c4de;
   padding: 5px 10px;
-  /* Reduced padding for smaller buttons */
   margin-top: 5px;
   cursor: pointer;
   border-radius: 5px;
@@ -81,13 +76,11 @@ button:hover {
 /* Upload Container and Form */
 .upload-container {
   padding: 5px;
-  /* Reduced padding for a slimmer upload area */
   background-color: #add8e6;
   border-top: 2px solid #b0c4de;
   display: flex;
   flex-direction: column;
   gap: 5px;
-  /* Reduced gap between form elements */
 }
 
 .upload-container label,
@@ -116,7 +109,6 @@ button:hover {
   0% {
     transform: rotate(0deg);
   }
-
   100% {
     transform: rotate(360deg);
   }
@@ -131,6 +123,7 @@ button:hover {
 /* Visualization Container */
 .visualization {
   width: 100%;
+  overflow: hidden;
   margin-top: 20px;
 }
 
@@ -219,6 +212,7 @@ button:hover {
 .ai-message {
   background-color: #f0f5fc;
   color: #000;
+  align-self: flex-start;
 }
 
 /* Dropdown Button and Content */
@@ -263,13 +257,11 @@ button:hover {
   background-color: #b0c4de;
 }
 
-
 /* Chat Header */
 .chat-header {
   background-color: #add8e6;
   color: #000;
   padding: 1px 0;
-  /* Minimal vertical padding and no horizontal padding */
   text-align: center;
   display: flex;
   justify-content: center;
@@ -281,17 +273,55 @@ button:hover {
 .chat-logo {
   height: 50px;
   display: block;
-  /* Ensure logo is block level for vertical centering */
   margin-bottom: 5px;
-  /* Add some space between the logo and the text */
 }
 
-/* Reduce margins on h2 if it has any, ensure h2 margin is not causing extra space */
 .chat-header h2 {
   font-family: 'Orbitron', sans-serif;
   margin: 0 0 5px 0;
-  /* Only add margin-bottom if needed */
   font-weight: 700;
   font-size: 1.25em;
-  /* Reduced font size if it's too large */
+}
+
+
+/* Feedback Buttons */
+.feedback-buttons {
+  display: flex;
+  justify-content: center; /* Center align the buttons horizontally */
+  gap: 10px; /* Add space between the buttons */
+  margin-top: 5px;
+}
+
+.feedback-buttons button {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.feedback-buttons button:hover {
+  color: #007BFF;
+}
+
+.thumbs-up::before {
+  content: '👍';
+}
+
+.thumbs-down::before {
+  content: '👎';
+}
+
+/* Play Button */
+.play-button {
+  font-size: 14px;
+  padding: 5px 10px;
+  margin-left: 10px;
+  border-radius: 5px;
+  background-color: #add8e6;
+  border: 1px solid #b0c4de;
+}
+
+.play-button:hover {
+  background-color: #b0c4de;
 }

@@ -5,7 +5,7 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 from dotenv import load_dotenv
-from documents.documents import DocumentHandler, allowed_file
+from documents.documents import DocumentHandler
 from lenox import Lenox
 from prompts import PromptEngine, PromptEngineConfig
 from werkzeug.utils import secure_filename
@@ -77,8 +77,13 @@ def transcribe_audio():
     if not audio_file:
         return jsonify({'error': 'No file provided'}), 400
 
-    # Save the audio file
-    audio_path = secure_filename(audio_file.filename)
+    # Ensure the filename is not None
+    filename = audio_file.filename
+    if filename:
+        audio_path = secure_filename(filename)
+    else:
+        audio_path = secure_filename("default_filename.wav")
+
     audio_file.save(os.path.join(app.config['UPLOAD_FOLDER'], audio_path))
 
     # Perform transcription using the Whisper model
@@ -103,9 +108,9 @@ def upload_document():
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
 
-    if file and allowed_file(file.filename):
-        secure_filename(file.filename)  # Ensures the filename is secure
-
+    filename = file.filename
+    if filename is not None:
+        filename = secure_filename(filename)
         success, message = document_handler.save_document(file)
         if success:
             return jsonify({'message': message}), 200
@@ -176,7 +181,7 @@ def handle_feedback():
     feedback = feedback_data['feedback']
 
     try:
-        lenox.teach_from_feedback(query, feedback)
+        lenox.teach_from_feedback(query, feedback, session['session_id'])
         return jsonify({'message': 'Feedback processed successfully, and learning was updated.'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -190,15 +195,22 @@ def search():
     app.logger.debug(f"Search results: {search_results}")
     return jsonify({'type': 'search_results', 'results': search_results})
 
+
 @app.route('/create_visualization', methods=['POST'])
 def create_visualization():
     try:
         data = request.get_json()
-        visualization_result = lenox.handle_visualization_query(data['query'], [], session.get('session_id', 'default_session'))
-        return jsonify(visualization_result)
+        visualization_result = lenox.handle_visualization_query(data['query'], session.get('session_id', 'default_session'))
+        
+        # Ensure proper formatting for the UI
+        if visualization_result['type'] == 'visualization':
+            return jsonify({"status": "success", "data": visualization_result['content']})
+        else:
+            return jsonify({"status": "error", "message": visualization_result['content']}), 400
     except Exception as e:
         app.logger.error(f"Failed to create visualization: {str(e)}")
         return jsonify({'error': 'Failed to process visualization.'}), 500
+
 
 
 @socketio.on('connect')

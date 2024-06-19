@@ -1,6 +1,7 @@
 import re
+import sqlite3
+from typing import Dict, List, Union, Any
 from visualize_data import VisualizationConfig, create_visualization
-from typing import Dict, List, Union
 from langchain_core.utils.function_calling import convert_to_openai_function
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -12,9 +13,7 @@ from langchain.agents.format_scratchpad import format_to_openai_functions
 from lenox_memory import SQLChatMessageHistory
 from prompts import PromptEngine, PromptEngineConfig
 import requests
-from visualize_data import VisualizationConfig, create_visualization
-
-
+import json
 
 
 class Lenox:
@@ -24,7 +23,9 @@ class Lenox:
         self.duckduckgo_search = duckduckgo_search
         self.memory = SQLChatMessageHistory(session_id="my_session", connection_string=connection_string)
         self.openai_api_key = openai_api_key  # Save the API key
+        self.db_path = 'lenox.db'
         self.setup_components(tools)
+        self._init_feedback_table()
 
     def setup_components(self, tools):
         self.functions = [convert_to_openai_function(f) for f in tools]
@@ -60,20 +61,13 @@ class Lenox:
             return {"type": "text", "content": "Please enter a query."}
 
         self.memory.session_id = session_id
-        new_message = HumanMessage(content=query, sender="user")
+        new_message = HumanMessage(content=query)  # Removed sender parameter
         self.memory.add_message(new_message)
         chat_history = self.memory.messages()
 
         # Check for visualization intent
         if self.is_visualization_query(query):
-            vis_type = self.parse_visualization_type(query)
-            data = self.fetch_data_for_visualization(query)
-            if not data:
-                return {"type": "error", "content": "Data for visualization could not be fetched."}
-            visualization_config = VisualizationConfig(data=data, visualization_type=vis_type)
-            visualization_json = create_visualization(visualization_config)
-            self.memory.add_message(AIMessage(content=visualization_json))
-            return self.create_response(visualization_json, "visual")
+            return self.handle_visualization_query(query, session_id=session_id)
 
         # Enhanced intent recognition for search using regex
         if re.search(r"\b(search for|find|lookup|where can i find)\b", query, re.IGNORECASE):
@@ -93,6 +87,9 @@ class Lenox:
 
         self.memory.add_message(AIMessage(content=output))
         return {"type": "text", "content": output}
+
+
+
 
     def is_visualization_query(self, query: str) -> bool:
         """Identify visualization-based queries."""
@@ -116,15 +113,27 @@ class Lenox:
         """Extract data for visualization."""
         numbers = [int(s) for s in query.split() if s.isdigit()]
         if numbers:
-            return {'x': list(range(1, len(numbers) + 1)), 'y': numbers, 'type': 'line'}
+            return {'x': list(range(1, len(numbers) + 1)), 'y': numbers}
         else:
-            return {'x': [1, 2, 3, 4], 'y': [10, 11, 12, 13], 'type': 'scatter'}
+            return {'x': [1, 2, 3, 4], 'y': [10, 11, 12, 13]}
 
-    def create_response(self, content, response_type="text") -> dict:
-        """Create a structured response."""
-        if response_type == "visual":
-            return {"type": response_type, "content": content}
-        return {"type": response_type, "content": str(content)}
+    def handle_visualization_query(self, query: str, session_id: str) -> Dict[str, Any]:
+        """
+        Handle visualization-related queries.
+        """
+        vis_type = self.parse_visualization_type(query)
+        data = self.fetch_data_for_visualization(query)
+        if not data:
+            return {"type": "error", "content": "Data for visualization could not be fetched."}
+        
+        # Ensure the data type matches the expected type
+        visualization_data = {key: [float(value) if isinstance(value, int) else value for value in values] 
+                              for key, values in data.items()}
+
+        visualization_config = VisualizationConfig(data=visualization_data, visualization_type=vis_type)
+        visualization_json = create_visualization(visualization_config)
+        return {"type": "visualization", "content": json.loads(visualization_json)}
+
 
     def handle_document_query(self, query: str) -> str:
         """Query the document index."""
@@ -153,3 +162,48 @@ class Lenox:
         else:
             print(f"Failed to synthesize audio: {response.status_code}, {response.text}")
             return None
+
+    def _init_feedback_table(self):
+        # Initialize the feedback table if it does not exist
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('''CREATE TABLE IF NOT EXISTS feedback (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            query TEXT NOT NULL,
+                            feedback TEXT NOT NULL,
+                            session_id TEXT NOT NULL
+                        )''')
+        conn.commit()
+        conn.close()
+
+    def teach_from_feedback(self, query: str, feedback: str, session_id: str) -> None:
+        """
+        Update the model or system based on user feedback.
+
+        Parameters:
+        - query (str): The query for which feedback is provided.
+        - feedback (str): The feedback from the user.
+        - session_id (str): The session ID of the user providing the feedback.
+        """
+        # Store feedback in the database
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('INSERT INTO feedback (query, feedback, session_id) VALUES (?, ?, ?)', 
+                       (query, feedback, session_id))
+        conn.commit()
+        conn.close()
+
+    def process_feedback(self, feedback: str, session_id: str) -> str:
+        """
+        Process feedback in real-time.
+
+        Parameters:
+        - feedback (str): The feedback provided by the user.
+        - session_id (str): The session ID of the user providing the feedback.
+
+        Returns:
+        - str: Response after processing feedback.
+        """
+        # Here you can add logic to process the feedback in real-time
+        print(f"Processing feedback '{feedback}' for session '{session_id}'")
+        return "Feedback processed successfully"

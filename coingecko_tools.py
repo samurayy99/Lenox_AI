@@ -9,7 +9,6 @@ from langchain.agents import tool
 # Setup basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
 # Initialize CoinGecko API client
 cg = CoinGeckoAPI()
 
@@ -69,26 +68,26 @@ def calculate_macd(prices: List[float], slow: int = 26, fast: int = 12, signal: 
     Calculates the Moving Average Convergence Divergence (MACD) for a series of prices.
     """
     try:
-        exp1 = pd.Series(prices)
-        ema_fast = exp1.ewm(span=fast, adjust=False).mean()
-        ema_slow = exp1.ewm(span=slow, adjust=False).mean()
+        prices_series = pd.Series(prices)
+        ema_fast = prices_series.ewm(span=fast, adjust=False).mean()
+        ema_slow = prices_series.ewm(span=slow, adjust=False).mean()
         macd = ema_fast - ema_slow
         signal_line = macd.ewm(span=signal, adjust=False).mean()
         macd_value = macd.iloc[-1]
         signal_line_value = signal_line.iloc[-1]
         trend = "bullish" if macd_value > signal_line_value else "bearish"
         return (
-            f"The Moving Average Convergence Divergence (MACD) for Solana for the last month is {macd_value:.2f}, "
-            f"and the Signal Line is {signal_line_value:.2f}. The MACD is a trend-following momentum indicator "
-            f"that shows the relationship between two moving averages of a security’s price. A MACD above the "
-            f"Signal Line suggests a bullish trend, indicating it might be a good time to consider buying. Conversely, "
+            f"The Moving Average Convergence Divergence (MACD) is {macd_value:.2f}, "
+            f"and the Signal Line is {signal_line_value:.2f}. "
+            f"The current trend is {trend}. The MACD is a trend-following momentum indicator "
+            f"that shows the relationship between two moving averages of a security’s price. "
+            f"A MACD above the Signal Line suggests a bullish trend, indicating it might be a good time to consider buying. Conversely, "
             f"a MACD below the Signal Line suggests a bearish trend, which might not be the best time to buy. "
             "Always consult with a financial advisor or do further research before making investment decisions."
         )
     except Exception as e:
         logging.error(f"Exception occurred while calculating MACD: {str(e)}")
         return "Failed to calculate MACD."
-
 
 @tool
 def get_exchange_rates(coin_id: str = 'bitcoin') -> str:
@@ -111,17 +110,17 @@ def calculate_rsi(prices: List[float], period: int = 14) -> str:
     Calculates the Relative Strength Index (RSI) for a given series of prices.
     """
     try:
-        prices = np.array(prices)
-        deltas = np.diff(prices)
+        prices_array = np.array(prices)
+        deltas = np.diff(prices_array)
         seed = deltas[:period+1]
         up = seed[seed >= 0].sum()/period
         down = -seed[seed < 0].sum()/period
         rs = up/down
-        rsi = np.zeros_like(prices)
+        rsi = np.zeros_like(prices_array)
         rsi[:period] = 100. - 100./(1.+rs)
 
-        for i in range(period, len(prices)):
-            delta = deltas[i-1]  # because the diff is 1 shorter
+        for i in range(period, len(prices_array)):
+            delta = deltas[i-1]
             upval = delta if delta > 0 else 0.
             downval = -delta if delta < 0 else 0.
 
@@ -131,7 +130,7 @@ def calculate_rsi(prices: List[float], period: int = 14) -> str:
             rs = up/down
             rsi[i] = 100. - 100./(1.+rs)
 
-        return f"RSI: {rsi[-1]}"
+        return f"RSI: {rsi[-1]:.2f}"
     except Exception as e:
         logging.error(f"Exception occurred while calculating RSI: {str(e)}")
         return "Failed to calculate RSI."
