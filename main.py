@@ -6,14 +6,12 @@ import logging
 from logging.handlers import RotatingFileHandler
 from dotenv import load_dotenv
 from documents.documents import DocumentHandler
-from lenox import Lenox
+from lenox import Lenox  # Ensure this imports the updated lenox.py
 from prompts import PromptEngine, PromptEngineConfig
 from werkzeug.utils import secure_filename
-from langchain_community.tools import DuckDuckGoSearchResults
 from tool_imports import import_tools
 import whisper
 from dashboards.dashboard import create_dashboard
-
 
 # Load environment variables
 load_dotenv()
@@ -42,16 +40,12 @@ document_handler = DocumentHandler(document_folder="/Users/lenox27/LENOX/uploade
 prompt_engine_config = PromptEngineConfig(context_length=10, max_tokens=4096)
 prompt_engine = PromptEngine(config=prompt_engine_config, tools=tools)
 
-duckduckgo_search = DuckDuckGoSearchResults()
-
 # Initialize Lenox with all necessary components
-lenox = Lenox(tools=tools, document_handler=document_handler, prompt_engine=prompt_engine, duckduckgo_search=duckduckgo_search, openai_api_key=openai_api_key)
-
+lenox = Lenox(tools=tools, document_handler=document_handler, prompt_engine=prompt_engine, openai_api_key=openai_api_key)
 
 @app.route('/dashboard')
 def dashboard_page():
     return redirect('/dashboard/')
-
 
 @app.before_request
 def log_request():
@@ -191,10 +185,9 @@ def search():
     query = request.json.get('query')
     if not query:
         return jsonify({'error': 'Empty query.'}), 400
-    search_results = duckduckgo_search.run(query)
+    search_results = lenox.web_search_manager.aggregate_search_results(query)
     app.logger.debug(f"Search results: {search_results}")
     return jsonify({'type': 'search_results', 'results': search_results})
-
 
 @app.route('/create_visualization', methods=['POST'])
 def create_visualization():
@@ -210,8 +203,6 @@ def create_visualization():
     except Exception as e:
         app.logger.error(f"Failed to create visualization: {str(e)}")
         return jsonify({'error': 'Failed to process visualization.'}), 500
-
-
 
 @socketio.on('connect')
 def on_connect():

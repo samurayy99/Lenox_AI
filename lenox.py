@@ -1,4 +1,3 @@
-import re
 import sqlite3
 from typing import Dict, List, Union, Any
 from visualize_data import VisualizationConfig, create_visualization
@@ -14,16 +13,17 @@ from lenox_memory import SQLChatMessageHistory
 from prompts import PromptEngine, PromptEngineConfig
 import requests
 import json
+from web_search import WebSearchManager
 
 
 class Lenox:
-    def __init__(self, tools, document_handler, prompt_engine=None, duckduckgo_search=None, connection_string="sqlite:///lenox.db", openai_api_key=None):
+    def __init__(self, tools, document_handler, prompt_engine=None, connection_string="sqlite:///lenox.db", openai_api_key=None):
         self.document_handler = document_handler
         self.prompt_engine = prompt_engine if prompt_engine else PromptEngine(config=PromptEngineConfig(), tools=tools)
-        self.duckduckgo_search = duckduckgo_search
         self.memory = SQLChatMessageHistory(session_id="my_session", connection_string=connection_string)
         self.openai_api_key = openai_api_key  # Save the API key
         self.db_path = 'lenox.db'
+        self.web_search_manager = WebSearchManager()
         self.setup_components(tools)
         self._init_feedback_table()
 
@@ -55,38 +55,43 @@ class Lenox:
             | OpenAIFunctionsAgentOutputParser()
         )
 
+    
     def convchain(self, query: str, session_id: str = "my_session") -> dict:
         """Process a user query."""
         if not query:
             return {"type": "text", "content": "Please enter a query."}
 
         self.memory.session_id = session_id
-        new_message = HumanMessage(content=query)  # Removed sender parameter
+        new_message = HumanMessage(content=query)
         self.memory.add_message(new_message)
         chat_history = self.memory.messages()
 
-        # Check for visualization intent
-        if self.is_visualization_query(query):
+        # Use the intent detection from WebSearchManager
+        intent = self.web_search_manager.detect_intent(query)
+
+        # Handle intent using the WebSearchManager
+        response = self.web_search_manager.handle_intent(intent, query)
+
+        # If response type is text, add to memory
+        if response["type"] == "text":
+            self.memory.add_message(AIMessage(content=response["content"]))
+        elif response["type"] == "visualization":
+            # If visualization, handle visualization logic
             return self.handle_visualization_query(query, session_id=session_id)
 
-        # Enhanced intent recognition for search using regex
-        if re.search(r"\b(search for|find|lookup|where can i find)\b", query, re.IGNORECASE):
-            if self.duckduckgo_search:
-                search_result = self.duckduckgo_search.run(query)
-                return {"type": "text", "content": search_result}
-            else:
-                return {"type": "text", "content": "Search tool is not configured."}
+        # If intent is unknown or response type is not handled, use general conversational handling
+        if intent == "unknown" or response["type"] not in ["text", "visualization"]:
+            result = self.qa.invoke({"input": query, "chat_history": chat_history})
+            output = result.get('output', 'Error processing the request.')
 
-        # General conversational handling via QA invocation
-        result = self.qa.invoke({"input": query, "chat_history": chat_history})
-        output = result.get('output', 'Error processing the request.')
+            # Ensure output is a string
+            if not isinstance(output, str):
+                output = str(output)
 
-        # Ensure output is a string
-        if not isinstance(output, str):
-            output = str(output)
+            self.memory.add_message(AIMessage(content=output))
+            return {"type": "text", "content": output}
 
-        self.memory.add_message(AIMessage(content=output))
-        return {"type": "text", "content": output}
+        return response
 
 
 
@@ -133,7 +138,6 @@ class Lenox:
         visualization_config = VisualizationConfig(data=visualization_data, visualization_type=vis_type)
         visualization_json = create_visualization(visualization_config)
         return {"type": "visualization", "content": json.loads(visualization_json)}
-
 
     def handle_document_query(self, query: str) -> str:
         """Query the document index."""
