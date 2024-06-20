@@ -6,6 +6,11 @@ from coingecko_tools import (
 )
 from youtube_tools import search_youtube, process_youtube_video, query_youtube_video
 from coinpaprika_tools import get_coin_details, get_coin_tags
+from cryptopanic_tools import get_latest_news, get_news_sources, get_last_news_title
+from coinmarketcap_tools import get_latest_listings, get_crypto_metadata, get_global_metrics
+from fearandgreed_tools import get_fear_and_greed_index
+from whale_alert_tools import get_whale_alert_status, get_transaction_by_hash, get_recent_transactions
+from binance_tools import get_binance_ticker, get_binance_order_book, get_binance_recent_trades
 
 def import_tools():
     """
@@ -15,33 +20,56 @@ def import_tools():
     """
     tools = [
         # CryptoCompare Tools
-        get_current_price,        # Fetch current price for cryptocurrencies
-        get_historical_daily,     # Retrieve historical daily data for price analysis
-        get_top_volume_symbols,   # Identify top trading volume symbols in crypto market
+        get_current_price,
+        get_historical_daily,
+        get_top_volume_symbols,
         
         # CoinGecko Tools
-        get_market_data,          # Get general market data for various cryptocurrencies
-        get_historical_market_data,  # Fetch historical market data for trend analysis
-        get_ohlc,                 # Obtain open-high-low-close data for specific coins
-        get_trending_cryptos,     # Find trending cryptocurrencies
-        calculate_macd,           # Calculate Moving Average Convergence Divergence
-        get_exchange_rates,       # Retrieve current exchange rates for cryptocurrencies
-        calculate_rsi,            # Calculate Relative Strength Index for market analysis
+        get_market_data,
+        get_historical_market_data,
+        get_ohlc,
+        get_trending_cryptos,
+        calculate_macd,
+        get_exchange_rates,
+        calculate_rsi,
 
         # Reddit Tools
-        get_reddit_data,          # Fetch data from Reddit
-        count_mentions,           # Count how often terms are mentioned on Reddit
-        analyze_sentiment,        # Analyze the sentiment of Reddit posts
-        find_trending_topics,     # Identify trending topics on Reddit
+        get_reddit_data,
+        count_mentions,
+        analyze_sentiment,
+        find_trending_topics,
 
         # YouTube Tools
-        search_youtube,           # Search for videos on YouTube
-        process_youtube_video,    # Process specific YouTube videos for content extraction
-        query_youtube_video,      # Run specific queries against YouTube videos
+        search_youtube,
+        process_youtube_video,
+        query_youtube_video,
 
         # CoinPaprika Tools
-        get_coin_details,         # Retrieve details about specific coins from CoinPaprika
-        get_coin_tags             # Fetch tags associated with coins for better categorization
+        get_coin_details,
+        get_coin_tags,
+
+        # CryptoPanic Tools
+        get_latest_news,
+        get_news_sources,
+        get_last_news_title,
+
+        # CoinMarketCap Tools
+        get_latest_listings,
+        get_crypto_metadata,
+        get_global_metrics,
+
+        # Fear and Greed Index Tools
+        get_fear_and_greed_index,
+
+        # Whale Alert Tools
+        get_whale_alert_status,
+        get_transaction_by_hash,
+        get_recent_transactions,
+
+        # Binance Tools
+        get_binance_ticker,
+        get_binance_order_book,
+        get_binance_recent_trades,
     ]
 
     return tools
