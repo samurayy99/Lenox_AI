@@ -43,7 +43,7 @@ class SQLChatMessageHistory(BaseChatMessageHistory):
         except SQLAlchemyError as e:
             logging.error("Failed to add message: %s", str(e))
 
-    def messages(self, limit: int = 10) -> List[BaseMessage]:
+    def messages(self, limit: int = 50) -> List[BaseMessage]:
         """Retrieve messages, ordered by most recent."""
         try:
             with self.session() as session:
@@ -54,11 +54,8 @@ class SQLChatMessageHistory(BaseChatMessageHistory):
                     .limit(limit)
                     .all()
                 )
-                db_messages.reverse()
-                messages = [
-                    messages_from_dict([json.loads(db_message.message)])[0]
-                    for db_message in db_messages
-                ]
+                db_messages.reverse()  # Reverse to maintain the order from oldest to newest
+                messages = [messages_from_dict([json.loads(str(db_message.message))])[0] for db_message in db_messages]
                 logging.debug("Retrieved messages: %s", messages)
                 return messages
         except SQLAlchemyError as e:
@@ -74,3 +71,4 @@ class SQLChatMessageHistory(BaseChatMessageHistory):
             logging.debug("All session messages cleared successfully.")
         except SQLAlchemyError as e:
             logging.error("Failed to clear messages: %s", str(e))
+

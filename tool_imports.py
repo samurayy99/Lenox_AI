@@ -1,11 +1,16 @@
+# Continue to import other necessary functions as before
 from reddit_tools import get_reddit_data, count_mentions, analyze_sentiment, find_trending_topics
-from cryptocompare_tools import get_current_price, get_historical_daily, get_top_volume_symbols
+from cryptocompare_tools import (
+    get_current_price, get_top_volume_symbols,
+    get_latest_social_stats, get_historical_social_stats, list_news_feeds_and_categories,
+    get_latest_trading_signals, get_top_exchanges_by_volume
+)
 from coingecko_tools import (
     get_market_data, get_historical_market_data, get_ohlc,
     get_trending_cryptos, calculate_macd, get_exchange_rates, calculate_rsi
 )
 from youtube_tools import search_youtube, process_youtube_video, query_youtube_video
-from coinpaprika_tools import get_coin_details, get_coin_tags
+from coinpaprika_tools import get_coin_details, get_coin_tags, get_market_overview, get_ticker_info
 from cryptopanic_tools import get_latest_news, get_news_sources, get_last_news_title
 from coinmarketcap_tools import get_latest_listings, get_crypto_metadata, get_global_metrics
 from fearandgreed_tools import get_fear_and_greed_index
@@ -21,8 +26,12 @@ def import_tools():
     tools = [
         # CryptoCompare Tools
         get_current_price,
-        get_historical_daily,
         get_top_volume_symbols,
+        get_latest_social_stats,
+        get_historical_social_stats,
+        list_news_feeds_and_categories,
+        get_latest_trading_signals,
+        get_top_exchanges_by_volume,
         
         # CoinGecko Tools
         get_market_data,
@@ -47,6 +56,8 @@ def import_tools():
         # CoinPaprika Tools
         get_coin_details,
         get_coin_tags,
+        get_market_overview,
+        get_ticker_info,
 
         # CryptoPanic Tools
         get_latest_news,
